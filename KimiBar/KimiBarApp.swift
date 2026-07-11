@@ -209,10 +209,7 @@ struct KimiMenu: View {
         VStack(spacing: 14) {
             // Header
             HStack(spacing: 12) {
-                Image("kimi-logo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 40, height: 40)
+                AnimatedKimiCodeLogo(width: 44)
 
                 Text("KimiCode Bar")
                     .font(.system(size: 18, weight: .bold))
