@@ -194,7 +194,7 @@ struct KimiMenu: View {
     private let debugPretendOlderVersion = true
 
     private let consoleURL = URL(string: "https://www.kimi.com/code/console")!
-    private let githubURL = URL(string: "https://github.com/xifandev/KimiBar")!
+    private let githubURL = URL(string: "https://github.com/xifandev/kimi-code-bar")!
 
     enum UpdateStatus: Equatable {
         case checking
@@ -211,7 +211,7 @@ struct KimiMenu: View {
             HStack(spacing: 12) {
                 AnimatedKimiCodeLogo(width: 44)
 
-                Text("Kimi Code")
+                Text("KimiCode Bar")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(.kimiTextPrimary)
 
