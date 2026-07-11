@@ -26,7 +26,7 @@
 ### 自行编译
 
 ```bash
-git clone https://github.com/xifandev/kimibar.git
+git clone https://github.com/xifandev/KimiBar.git
 cd kimibar
 open KimiBar.xcodeproj
 ```
