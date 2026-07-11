@@ -13,6 +13,19 @@ struct KimiBarApp: App {
     }
 }
 
+// MARK: - 配色
+
+extension ShapeStyle where Self == Color {
+    static var kimiPanelBackground: Color { Color(red: 0.06, green: 0.08, blue: 0.13) }
+    static var kimiCardBackground: Color { Color(red: 0.11, green: 0.14, blue: 0.21) }
+    static var kimiBlue: Color { Color(red: 0.23, green: 0.51, blue: 0.96) }
+    static var kimiTextPrimary: Color { .white }
+    static var kimiTextSecondary: Color { Color(white: 1.0, opacity: 0.55) }
+    static var kimiTextTertiary: Color { Color(white: 1.0, opacity: 0.40) }
+}
+
+// MARK: - 菜单栏图标
+
 struct KimiLabel: View {
     @StateObject private var model = KimiBarModel.shared
 
@@ -30,27 +43,42 @@ struct KimiLabel: View {
     }
 }
 
+private func percentageText(_ percentage: Int) -> String {
+    // 100% 时去掉数字和百分号之间的细空格，避免菜单栏宽度不够被截断
+    percentage == 100 ? "\(percentage)%" : "\(percentage)\u{2009}%"
+}
+
+private func percentageFont(for percentage: Int) -> Font {
+    .system(size: 10, weight: .medium, design: .default)
+}
+
 @MainActor
 enum MenuBarTextRenderer {
     static func image(weekly: Int, fiveHour: Int) -> NSImage {
-        let content = VStack(alignment: .trailing, spacing: 0) {
-            HStack(spacing: 3) {
+        let content = VStack(alignment: .trailing, spacing: -1) {
+            HStack(spacing: 2) {
                 Text("7D")
-                    .frame(width: 20, alignment: .leading)
-                Text("\(weekly)\u{2009}%")
-                    .frame(width: 32, alignment: .trailing)
+                    .font(.system(size: 10, weight: .medium, design: .default))
+                    .monospacedDigit()
+                    .frame(width: 16, alignment: .leading)
+                Text(percentageText(weekly))
+                    .font(percentageFont(for: weekly))
+                    .monospacedDigit()
+                    .frame(width: 30, alignment: .trailing)
             }
-            HStack(spacing: 3) {
+            HStack(spacing: 2) {
                 Text("5H")
-                    .frame(width: 20, alignment: .leading)
-                Text("\(fiveHour)\u{2009}%")
-                    .frame(width: 32, alignment: .trailing)
+                    .font(.system(size: 10, weight: .medium, design: .default))
+                    .monospacedDigit()
+                    .frame(width: 16, alignment: .leading)
+                Text(percentageText(fiveHour))
+                    .font(percentageFont(for: fiveHour))
+                    .monospacedDigit()
+                    .frame(width: 30, alignment: .trailing)
             }
         }
-        .font(.system(size: 11, weight: .semibold, design: .default))
-        .monospacedDigit()
         .foregroundStyle(Color(red: 0.886, green: 0.910, blue: 0.961))
-        .frame(width: 55, height: 22, alignment: .trailing)
+        .frame(width: 48, height: 20, alignment: .trailing)
 
         let renderer = ImageRenderer(content: content)
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2.0
@@ -63,97 +91,257 @@ enum MenuBarTextRenderer {
     }
 }
 
+// MARK: - Kimi Code 图标（复刻 web 认证页 logo，含眨眼 + 左右看动画）
+
+struct AnimatedKimiCodeLogo: View {
+    var width: CGFloat = 44
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            KimiCodeLogo(
+                width: width,
+                lookOffset: lookOffset(at: t),
+                blinkScale: blinkScale(at: t)
+            )
+        }
+    }
+
+    private func lookOffset(at t: TimeInterval) -> CGFloat {
+        let c = t.truncatingRemainder(dividingBy: 2) / 2
+        let amplitude: CGFloat = 5
+        switch c {
+        case 0.00..<0.15: return (c / 0.15) * amplitude
+        case 0.15..<0.30: return amplitude
+        case 0.30..<0.45: return amplitude - ((c - 0.30) / 0.15) * (amplitude * 2)
+        case 0.45..<0.60: return -amplitude
+        case 0.60..<0.75: return -amplitude + ((c - 0.60) / 0.15) * amplitude
+        default: return 0
+        }
+    }
+
+    private func blinkScale(at t: TimeInterval) -> CGFloat {
+        let c = t.truncatingRemainder(dividingBy: 2.5) / 2.5
+        switch c {
+        case 0.80..<0.85: return 1 - (c - 0.80) / 0.05 * 0.88
+        case 0.85..<0.95: return 0.12
+        case 0.95..<1.0: return 0.12 + (c - 0.95) / 0.05 * 0.88
+        default: return 1
+        }
+    }
+}
+
+struct KimiCodeLogo: View {
+    var width: CGFloat = 44
+    var lookOffset: CGFloat = 0
+    var blinkScale: CGFloat = 1
+
+    var body: some View {
+        let scale = width / 32
+        let height = width * 22 / 32
+
+        Canvas { context, _ in
+            let rect = CGRect(x: scale, y: scale, width: 30 * scale, height: 20 * scale)
+            let bodyPath = RoundedRectangle(cornerRadius: 6 * scale).path(in: rect)
+            context.fill(bodyPath, with: .color(.kimiBlue))
+
+            context.blendMode = .destinationOut
+
+            let eyeHeight = 8 * scale * blinkScale
+            let eyeY = (11 * scale) - (eyeHeight / 2)
+
+            let eye1 = CGRect(
+                x: (11.8 + lookOffset) * scale,
+                y: eyeY,
+                width: 2.8 * scale,
+                height: eyeHeight
+            )
+            let eye2 = CGRect(
+                x: (17.4 + lookOffset) * scale,
+                y: eyeY,
+                width: 2.8 * scale,
+                height: eyeHeight
+            )
+            context.fill(
+                RoundedRectangle(cornerRadius: 1.4 * scale).path(in: eye1),
+                with: .color(.white)
+            )
+            context.fill(
+                RoundedRectangle(cornerRadius: 1.4 * scale).path(in: eye2),
+                with: .color(.white)
+            )
+        }
+        .frame(width: width, height: height)
+        .shadow(color: Color.kimiBlue.opacity(0.35), radius: 8, x: 0, y: 3)
+    }
+}
+
+// MARK: - 主面板
+
 struct KimiMenu: View {
     @StateObject private var model = KimiBarModel.shared
     @State private var showSettings = false
+    @State private var showUpdateAlert = false
     @State private var kimiVersion = "检测中…"
+    @State private var availableVersion = ""
+    @State private var releaseNotes = ""
+    @State private var updateStatus: UpdateStatus = .checking
+
+    // MARK: 临时调试开关
+    // 强制显示“有新版本”状态（用假数据测试 UI）
+    private let debugForceUpdateAvailable = false
+    // 测试时把本机版本号最后一个数字减 1，确保 GitHub 检查一定能发现新版
+    private let debugPretendOlderVersion = true
 
     private let consoleURL = URL(string: "https://www.kimi.com/code/console")!
     private let githubURL = URL(string: "https://github.com/xifandev/KimiBar")!
 
+    enum UpdateStatus: Equatable {
+        case checking
+        case upToDate
+        case updateAvailable
+        case updating
+        case notInstalled
+        case error(String)
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            // 1. 统计区域
-            if let quota = model.quota {
-                QuotaDashboard(quota: quota, isLoading: model.isLoading)
-                    .padding(.top, 20)
-            } else {
-                Text(model.text)
-                    .font(.system(size: 22, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 120)
-                    .padding(.top, 20)
+        VStack(spacing: 14) {
+            // Header
+            HStack(spacing: 12) {
+                AnimatedKimiCodeLogo(width: 44)
+
+                Text("Kimi Code")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.kimiTextPrimary)
+
+                Spacer()
+
+                Button(action: { NSWorkspace.shared.open(githubURL) }) {
+                    HStack(spacing: 4) {
+                        Image("github-icon")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 12, height: 12)
+
+                        Text("社区版")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundStyle(.kimiTextSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .cursor(.pointingHand)
             }
 
-            // 2. 分割线
-            Divider()
-                .padding(.vertical, 16)
+            // 用量卡片
+            HStack(spacing: 12) {
+                UsageCard(
+                    title: "本周用量",
+                    subtitle: nil,
+                    percentage: model.quota?.weekly.percentage ?? 0,
+                    reset: model.quota?.weekly.timeUntilReset ?? "--",
+                    color: .kimiBlue,
+                    isLoading: model.isLoading
+                )
 
-            // 3. 操作按钮
+                UsageCard(
+                    title: "5小时用量",
+                    subtitle: nil,
+                    percentage: model.quota?.fiveHour.percentage ?? 0,
+                    reset: model.quota?.fiveHour.timeUntilReset ?? "--",
+                    color: .orange,
+                    isLoading: model.isLoading
+                )
+            }
+
+            // 操作按钮卡片
             HStack(spacing: 10) {
-                Button(action: { model.refresh() }) {
-                    Text("刷新")
-                        .font(.system(size: 13))
-                }
-                .disabled(model.key.isEmpty || model.isLoading)
-                .controlSize(.small)
-                .cursor(.pointingHand)
-
-                Spacer()
-
-                Button(action: { showSettings = true }) {
-                    Text("设置")
-                        .font(.system(size: 13))
-                }
-                .controlSize(.small)
-                .cursor(.pointingHand)
-
-                Button(action: { NSApplication.shared.terminate(nil) }) {
-                    Text("退出")
-                        .font(.system(size: 13))
-                }
-                .controlSize(.small)
-                .cursor(.pointingHand)
-            }
-
-            // 4. 快捷链接
-            HStack(spacing: 16) {
-                ShortcutLink(
-                    title: "KimiCode 控制台",
-                    icon: "link",
-                    url: consoleURL
+                ActionButton(
+                    title: "刷新",
+                    icon: "arrow.clockwise",
+                    action: { model.refresh() },
+                    disabled: model.key.isEmpty || model.isLoading
                 )
 
-                ShortcutLink(
-                    title: "GitHub",
-                    icon: "github-icon",
-                    url: githubURL,
-                    isCustomIcon: true
+                ActionButton(
+                    title: "设置",
+                    icon: "gearshape",
+                    action: { showSettings = true }
                 )
 
-                Spacer()
+                ActionButton(
+                    title: "退出",
+                    icon: "power",
+                    action: { NSApplication.shared.terminate(nil) }
+                )
             }
-            .padding(.top, 14)
 
-            // 5. 分割线
-            Divider()
-                .padding(.vertical, 14)
-
-            // 6. 底部 KimiCode 版本号
-            HStack {
-                Text("KimiCode Version \(formatKimiVersion(kimiVersion))")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary.opacity(0.7))
+            // 快捷链接卡片
+            HStack(alignment: .center) {
+                LinkRow(title: "KimiCode 控制台", icon: "link", url: consoleURL)
 
                 Spacer()
             }
-            .padding(.bottom, 14)
+            .padding(14)
+            .background(Color.kimiCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+
+            // 版本卡片
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("KimiCode Version")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.kimiTextTertiary)
+
+                    Text(formatKimiVersion(kimiVersion))
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.kimiTextSecondary)
+                }
+
+                Spacer()
+
+                if updateStatus == .checking || updateStatus == .updating {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.7)
+                } else {
+                    Button(action: checkKimiCLI) {
+                        Text("检查更新")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .controlSize(.small)
+                    .buttonStyle(.borderedProminent)
+                    .cursor(.pointingHand)
+                }
+            }
+            .padding(14)
+            .background(Color.kimiCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-        .padding(.horizontal, 18)
+        .padding(16)
         .frame(width: 340)
-        .fixedSize(horizontal: false, vertical: true)
+        .background(Color.kimiPanelBackground)
         .popover(isPresented: $showSettings, arrowEdge: .bottom) {
             SettingsView()
+        }
+        .popover(isPresented: $showUpdateAlert, arrowEdge: .bottom) {
+            UpdateAlertView(
+                currentVersion: formatKimiVersion(kimiVersion),
+                newVersion: availableVersion.isEmpty ? "新版" : availableVersion,
+                releaseNotes: releaseNotes,
+                onDismiss: { showUpdateAlert = false },
+                onInstall: {
+                    showUpdateAlert = false
+                    Task { await installKimiCLIUpdate() }
+                }
+            )
         }
         .onAppear {
             loadKimiVersion()
@@ -165,7 +353,75 @@ struct KimiMenu: View {
             let version = await detectKimiCLIVersion()
             await MainActor.run {
                 kimiVersion = version
+                updateStatus = version == "未检测到" ? .notInstalled : .upToDate
             }
+        }
+    }
+
+    private func checkKimiCLI() {
+        guard updateStatus != .checking && updateStatus != .updating else { return }
+        Task {
+            await performKimiUpgradeCheck()
+        }
+    }
+
+    private func performKimiUpgradeCheck() async {
+        await MainActor.run { updateStatus = .updating }
+
+        // 临时调试：强制模拟检测到新版本
+        if debugForceUpdateAvailable {
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            await MainActor.run {
+                availableVersion = "0.99.0"
+                releaseNotes = "1. 修复了若干已知问题。\n2. 优化了性能。\n3. 新增实验性功能。"
+                updateStatus = .updateAvailable
+                showUpdateAlert = true
+            }
+            return
+        }
+
+        async let currentVersionTask = detectKimiCLIVersion()
+        async let changelogTask = fetchLatestChineseChangelog()
+
+        let current = await currentVersionTask
+        let changelog = await changelogTask
+
+        await MainActor.run {
+            kimiVersion = current
+
+            guard current != "未检测到" else {
+                updateStatus = .notInstalled
+                return
+            }
+
+            guard let changelog = changelog else {
+                updateStatus = .error("无法获取中文更新日志")
+                return
+            }
+
+            let latest = normalizeVersion(changelog.version)
+            let currentNormalized = debugPretendOlderVersion
+                ? versionBySubtractingOnePatch(current)
+                : normalizeVersion(current)
+
+            if compareVersions(currentNormalized, latest) == .orderedAscending {
+                availableVersion = latest
+                releaseNotes = changelog.notes
+                updateStatus = .updateAvailable
+                showUpdateAlert = true
+            } else {
+                updateStatus = .upToDate
+            }
+        }
+    }
+
+    private func installKimiCLIUpdate() async {
+        await MainActor.run { updateStatus = .updating }
+        let _ = await runKimiCommand(arguments: ["upgrade"])
+        let version = await detectKimiCLIVersion()
+        await MainActor.run {
+            kimiVersion = version
+            updateStatus = .upToDate
         }
     }
 
@@ -232,19 +488,402 @@ struct KimiMenu: View {
     }
 }
 
+// MARK: - 用量卡片
+
+struct UsageCard: View {
+    let title: String
+    let subtitle: String?
+    let percentage: Int
+    let reset: String
+    let color: Color
+    let isLoading: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 标题行
+            HStack {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.kimiTextPrimary)
+
+                Spacer()
+
+                if let subtitle = subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.kimiTextTertiary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+            }
+
+            // 数值
+            ZStack(alignment: .leading) {
+                if !isLoading {
+                    Text("\(percentage)%")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.kimiTextPrimary)
+                        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+                }
+
+                if isLoading {
+                    LoadingRing()
+                        .frame(width: 24, height: 24)
+                        .transition(.opacity.animation(.easeInOut(duration: 0.15)))
+                }
+            }
+            .frame(height: 38)
+            .animation(.easeInOut(duration: 0.2), value: isLoading)
+
+            // 进度条
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .frame(height: 4)
+                        .foregroundStyle(Color.white.opacity(0.10))
+
+                    Capsule()
+                        .frame(width: proxy.size.width * CGFloat(min(percentage, 100)) / 100, height: 4)
+                        .foregroundStyle(color)
+                        .shadow(color: color.opacity(0.4), radius: 3, x: 0, y: 1)
+                }
+            }
+            .frame(height: 4)
+
+            // 重置时间
+            Text(reset)
+                .font(.system(size: 11))
+                .foregroundStyle(.kimiTextSecondary)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity)
+        .background(Color.kimiCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - 操作按钮
+
+struct ActionButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    var disabled: Bool = false
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .medium))
+
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .foregroundStyle(disabled ? .kimiTextTertiary : (isHovered ? .kimiTextPrimary : .kimiTextSecondary))
+            .background(isHovered && !disabled ? Color.white.opacity(0.10) : Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .cursor(disabled ? .arrow : .pointingHand)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+// MARK: - 链接行
+
+struct LinkRow: View {
+    let title: String
+    let icon: String?
+    let imageName: String?
+    let url: URL
+    @State private var isHovered = false
+
+    init(title: String, icon: String? = nil, imageName: String? = nil, url: URL) {
+        self.title = title
+        self.icon = icon
+        self.imageName = imageName
+        self.url = url
+    }
+
+    var body: some View {
+        Button(action: { NSWorkspace.shared.open(url) }) {
+            HStack(spacing: 6) {
+                if let imageName {
+                    Image(imageName)
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 14, height: 14)
+                } else if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 11))
+                }
+
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(isHovered ? Color.kimiBlue : .kimiTextSecondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(isHovered ? Color.kimiBlue.opacity(0.12) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .cursor(.pointingHand)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+// MARK: - 中文更新日志抓取
+
+func fetchLatestChineseChangelog() async -> (version: String, notes: String)? {
+    let url = URL(string: "https://moonshotai.github.io/kimi-code/zh/release-notes/changelog.md")!
+    var request = URLRequest(url: url)
+    request.setValue("KimiBar/1.0", forHTTPHeaderField: "User-Agent")
+    request.timeoutInterval = 20
+
+    do {
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            return nil
+        }
+        guard let text = String(data: data, encoding: .utf8) else { return nil }
+        return parseChineseChangelog(text)
+    } catch {
+        return nil
+    }
+}
+
+func parseChineseChangelog(_ text: String) -> (version: String, notes: String)? {
+    let lines = text.components(separatedBy: .newlines)
+
+    // 找到第一个版本标题，例如：## 0.23.5（2026-07-10）
+    var startIndex: Int?
+    var version: String?
+
+    for (i, line) in lines.enumerated() {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard trimmed.hasPrefix("## ") else { continue }
+
+        let content = String(trimmed.dropFirst(3))
+        if let parenRange = content.range(of: "（") {
+            version = String(content[..<parenRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+        } else {
+            version = content
+        }
+        startIndex = i
+        break
+    }
+
+    guard let start = startIndex, let ver = version else { return nil }
+
+    // 收集到下一个 ## 标题之前
+    var endIndex = lines.count
+    for i in (start + 1)..<lines.count {
+        let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+        if trimmed.hasPrefix("## ") {
+            endIndex = i
+            break
+        }
+    }
+
+    let sectionLines = Array(lines[start..<endIndex])
+
+    var formatted: [String] = []
+    for line in sectionLines {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { continue }
+
+        if trimmed.hasPrefix("## ") {
+            continue // 跳过版本标题
+        } else if trimmed.hasPrefix("### ") {
+            formatted.append(trimmed) // 保留分类标题：### 修复 / ### 优化
+        } else if trimmed.hasPrefix("* ") {
+            formatted.append("• " + String(trimmed.dropFirst(2)))
+        } else {
+            formatted.append(trimmed)
+        }
+    }
+
+    return (ver, formatted.joined(separator: "\n"))
+}
+
+func normalizeVersion(_ version: String) -> String {
+    let trimmed = version.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    // 优先提取 package@x.x.x 后面的版本号
+    if let atRange = trimmed.range(of: "@", options: .backwards) {
+        let suffix = String(trimmed[atRange.upperBound...])
+        return extractSemver(suffix) ?? suffix
+    }
+
+    // 否则从字符串里提取第一个 semver
+    return extractSemver(trimmed) ?? trimmed
+}
+
+func extractSemver(_ text: String) -> String? {
+    let pattern = #"(\d+\.\d+\.\d+(?:\.\d+)?)"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+    let range = NSRange(text.startIndex..., in: text)
+    guard let match = regex.firstMatch(in: text, range: range) else { return nil }
+    return String(text[Range(match.range, in: text)!])
+}
+
+func compareVersions(_ lhs: String, _ rhs: String) -> ComparisonResult {
+    let left = normalizeVersion(lhs).split(separator: ".").compactMap { Int($0) }
+    let right = normalizeVersion(rhs).split(separator: ".").compactMap { Int($0) }
+
+    for i in 0..<max(left.count, right.count) {
+        let l = i < left.count ? left[i] : 0
+        let r = i < right.count ? right[i] : 0
+        if l < r { return .orderedAscending }
+        if l > r { return .orderedDescending }
+    }
+    return .orderedSame
+}
+
+func versionBySubtractingOnePatch(_ version: String) -> String {
+    let normalized = normalizeVersion(version)
+    var parts = normalized.split(separator: ".").compactMap { Int($0) }
+    guard !parts.isEmpty else { return normalized }
+
+    for i in (0..<parts.count).reversed() {
+        if parts[i] > 0 {
+            parts[i] -= 1
+            break
+        } else {
+            parts[i] = 9
+        }
+    }
+
+    return parts.map { String($0) }.joined(separator: ".")
+}
+
+// MARK: - 更新弹窗
+
+struct UpdateAlertView: View {
+    let currentVersion: String
+    let newVersion: String
+    let releaseNotes: String
+    let onDismiss: () -> Void
+    let onInstall: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // 标题栏
+            Text("新版本的 KimiCode 已经发布")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.kimiTextPrimary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+
+            // 内容
+            VStack(alignment: .leading, spacing: 12) {
+                Text("KimiCode \(newVersion) 可供下载，您现在的版本是 \(currentVersion)。要现在下载吗？")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.kimiTextSecondary)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("KimiCode \(newVersion)")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.kimiTextPrimary)
+
+                    Text("更新内容")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.kimiTextPrimary)
+
+                    ScrollView {
+                        Text(releaseNotes.isEmpty ? "暂无详细更新说明。" : releaseNotes)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.kimiTextSecondary)
+                            .lineSpacing(4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 180)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .padding(.horizontal, 24)
+
+            Spacer(minLength: 24)
+
+            // 底部按钮
+            HStack(spacing: 12) {
+                Button(action: onDismiss) {
+                    Text("稍后再说")
+                        .font(.system(size: 13))
+                        .frame(minWidth: 80)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .cursor(.pointingHand)
+
+                Spacer()
+
+                Button(action: onInstall) {
+                    Text("安装更新")
+                        .font(.system(size: 13))
+                        .frame(minWidth: 80)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .cursor(.pointingHand)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 20)
+        }
+        .frame(width: 520)
+        .background(Color.kimiPanelBackground)
+    }
+}
+
+// MARK: - 设置弹窗
+
 struct SettingsView: View {
     @StateObject private var model = KimiBarModel.shared
+    @Environment(\.dismiss) private var dismiss
     @State private var editingKey = ""
     @State private var isEditingKey = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("API Key")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            // 顶部标题
+            Text("设置")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.kimiTextPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
 
-            if isEditingKey || model.key.isEmpty {
-                HStack(spacing: 10) {
+            // 优雅分割线
+            Divider()
+                .background(Color.white.opacity(0.10))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+
+            // API Key 区域
+            VStack(alignment: .leading, spacing: 12) {
+                Text("API Key")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.kimiTextSecondary)
+
+                if isEditingKey || model.key.isEmpty {
                     SecureField("sk-kimi-...", text: $editingKey)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: .infinity)
@@ -254,47 +893,71 @@ struct SettingsView: View {
                                 editingKey = trimmed
                             }
                         }
+                } else {
+                    HStack(spacing: 10) {
+                        Text(maskedKey(model.key))
+                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.kimiTextSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
 
+                        Button(action: {
+                            editingKey = model.key
+                            isEditingKey = true
+                        }) {
+                            Text("修改")
+                                .font(.system(size: 13))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .cursor(.pointingHand)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+
+                if let error = model.errorMessage {
+                    ErrorMessageView(message: error)
+                }
+            }
+            .padding(.horizontal, 20)
+
+            // 底部分割线
+            Divider()
+                .background(Color.white.opacity(0.10))
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+
+            // 底部操作按钮
+            HStack {
+                Spacer()
+
+                if isEditingKey || model.key.isEmpty {
                     Button(action: saveKey) {
                         Text("保存")
-                            .font(.system(size: 13))
+                            .font(.system(size: 13, weight: .medium))
                     }
                     .disabled(editingKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                     .cursor(.pointingHand)
-                }
-            } else {
-                HStack(spacing: 10) {
-                    Text(maskedKey(model.key))
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Color.secondary.opacity(0.85))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.secondary.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-
-                    Button(action: {
-                        editingKey = model.key
-                        isEditingKey = true
-                    }) {
-                        Text("修改")
-                            .font(.system(size: 13))
+                } else {
+                    Button(action: { dismiss() }) {
+                        Text("完成")
+                            .font(.system(size: 13, weight: .medium))
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                     .cursor(.pointingHand)
                 }
-                .frame(maxWidth: .infinity)
             }
-
-            if let error = model.errorMessage {
-                ErrorMessageView(message: error)
-            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
         }
         .frame(width: 320)
-        .padding(20)
+        .background(Color.kimiPanelBackground)
         .onAppear {
             editingKey = model.key
             isEditingKey = model.key.isEmpty
@@ -307,6 +970,13 @@ struct SettingsView: View {
         model.key = trimmed
         isEditingKey = false
         model.refresh()
+
+        // 稍等片刻：如果 API 返回正常（无错误），自动关闭设置气泡
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            if model.errorMessage == nil {
+                dismiss()
+            }
+        }
     }
 
     private func maskedKey(_ key: String) -> String {
@@ -317,54 +987,39 @@ struct SettingsView: View {
     }
 }
 
-struct ShortcutLink: View {
-    let title: String
-    let icon: String
-    let url: URL
-    var isCustomIcon: Bool = false
-    @State private var isHovered = false
+// MARK: - 组件
+
+struct StatusTag: View {
+    let text: String
+    let color: Color
 
     var body: some View {
-        Button {
-            NSWorkspace.shared.open(url)
-        } label: {
-            HStack(spacing: 5) {
-                if isCustomIcon {
-                    Image(icon)
-                        .renderingMode(.template)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 16, height: 16)
-                } else {
-                    Image(systemName: icon)
-                        .font(.system(size: 14))
-                }
-                Text(title)
-                    .font(.system(size: 13))
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.accent)
-        .cursor(.pointingHand)
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        Text(text)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(color)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
     }
 }
 
-extension View {
-    func cursor(_ cursor: NSCursor) -> some View {
-        self.onHover { hovering in
-            if hovering {
-                cursor.set()
-            } else {
-                NSCursor.arrow.set()
+struct LoadingRing: View {
+    @State private var rotation: Double = 0
+
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.75)
+            .stroke(
+                style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+            )
+            .foregroundStyle(.white.opacity(0.7))
+            .rotationEffect(.degrees(rotation))
+            .onAppear {
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
             }
-        }
     }
 }
 
@@ -394,135 +1049,35 @@ struct ErrorMessageView: View {
                     .font(.system(size: 11))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.kimiTextSecondary)
             .help("复制错误信息")
             .padding(.top, 2)
         }
         .padding(8)
-        .background(Color.orange.opacity(0.08))
+        .background(Color.orange.opacity(0.10))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                .stroke(Color.orange.opacity(0.25), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
-struct LoadingRing: View {
-    @State private var rotation: Double = 0
+// MARK: - 工具扩展
 
-    var body: some View {
-        Circle()
-            .trim(from: 0, to: 0.75)
-            .stroke(
-                style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
-            )
-            .foregroundStyle(.white.opacity(0.7))
-            .rotationEffect(.degrees(rotation))
-            .onAppear {
-                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
+extension View {
+    func cursor(_ cursor: NSCursor) -> some View {
+        self.onHover { hovering in
+            if hovering {
+                cursor.set()
+            } else {
+                NSCursor.arrow.set()
             }
-    }
-}
-
-struct StatusTag: View {
-    let text: String
-    let color: Color
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-    }
-}
-
-struct QuotaDashboard: View {
-    let quota: KimiQuota
-    let isLoading: Bool
-
-    var body: some View {
-        HStack(spacing: 0) {
-            StatColumn(
-                title: "本周用量",
-                value: quota.weekly.percentage,
-                reset: quota.weekly.timeUntilReset,
-                color: .blue,
-                isLoading: isLoading
-            )
-
-            Divider()
-                .frame(height: 56)
-                .padding(.horizontal, 16)
-
-            StatColumn(
-                title: "5小时用量",
-                value: quota.fiveHour.percentage,
-                reset: quota.fiveHour.timeUntilReset,
-                color: .orange,
-                isLoading: isLoading
-            )
         }
-        .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
-struct StatColumn: View {
-    let title: String
-    let value: Int
-    let reset: String
-    let color: Color
-    let isLoading: Bool
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            ZStack {
-                if !isLoading {
-                    Text("\(value)%")
-                        .font(.system(size: 34, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                        .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-                }
-
-                if isLoading {
-                    LoadingRing()
-                        .frame(width: 26, height: 26)
-                        .transition(.opacity.animation(.easeInOut(duration: 0.15)))
-                }
-            }
-            .frame(width: 80, height: 44)
-            .animation(.easeInOut(duration: 0.2), value: isLoading)
-
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .frame(height: 3)
-                        .foregroundStyle(.secondary.opacity(0.15))
-
-                    Capsule()
-                        .frame(width: proxy.size.width * CGFloat(min(value, 100)) / 100, height: 3)
-                        .foregroundStyle(color)
-                }
-            }
-            .frame(width: 72, height: 3)
-
-            Text(reset)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
+// MARK: - 数据模型
 
 @MainActor
 final class KimiBarModel: ObservableObject {
@@ -560,7 +1115,6 @@ final class KimiBarModel: ObservableObject {
         Task {
             let result = await service.fetchQuota(key: key)
 
-            // 保证至少转 0.5 秒，体验更优雅
             let elapsed = Date().timeIntervalSince(startTime)
             let remaining = max(0, 0.5 - elapsed)
             if remaining > 0 {
