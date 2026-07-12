@@ -16,7 +16,7 @@
 
 ![菜单栏显示](Assets/menu-bar.png)
 
-![展开面板](Assets/panel.png)
+![展开面板](Assets/panel.gif)
 
 ## 特性
 

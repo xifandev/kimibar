@@ -192,88 +192,297 @@ enum MenuBarTextRenderer {
     }
 }
 
-// MARK: - Kimi Code 图标（复刻 web 认证页 logo，含眨眼 + 左右看动画）
+// MARK: - 窗口可见性探测
 
-struct AnimatedKimiCodeLogo: View {
-    var width: CGFloat = 44
+/// 监听菜单面板窗口的 key 状态，只在面板打开时让 Logo 动画运行，
+/// 避免收起后仍持续刷新。
+struct WindowVisibilityDetector: NSViewRepresentable {
+    @Binding var isVisible: Bool
 
-    var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            KimiCodeLogo(
-                width: width,
-                lookOffset: lookOffset(at: t),
-                blinkScale: blinkScale(at: t)
-            )
+    func makeNSView(context: Context) -> WindowVisibilityView {
+        let view = WindowVisibilityView()
+        view.onChange = { isVisible in
+            self.isVisible = isVisible
         }
+        return view
     }
 
-    private func lookOffset(at t: TimeInterval) -> CGFloat {
-        let c = t.truncatingRemainder(dividingBy: 2) / 2
-        let amplitude: CGFloat = 5
-        switch c {
-        case 0.00..<0.15: return (c / 0.15) * amplitude
-        case 0.15..<0.30: return amplitude
-        case 0.30..<0.45: return amplitude - ((c - 0.30) / 0.15) * (amplitude * 2)
-        case 0.45..<0.60: return -amplitude
-        case 0.60..<0.75: return -amplitude + ((c - 0.60) / 0.15) * amplitude
-        default: return 0
-        }
+    func updateNSView(_ nsView: WindowVisibilityView, context: Context) {}
+}
+
+final class WindowVisibilityView: NSView {
+    var onChange: ((Bool) -> Void)?
+    private var observationTokens: [NSObjectProtocol] = []
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        observe(window: window)
     }
 
-    private func blinkScale(at t: TimeInterval) -> CGFloat {
-        let c = t.truncatingRemainder(dividingBy: 2.5) / 2.5
-        switch c {
-        case 0.80..<0.85: return 1 - (c - 0.80) / 0.05 * 0.88
-        case 0.85..<0.95: return 0.12
-        case 0.95..<1.0: return 0.12 + (c - 0.95) / 0.05 * 0.88
-        default: return 1
+    private func observe(window: NSWindow?) {
+        for token in observationTokens {
+            NotificationCenter.default.removeObserver(token)
         }
+        observationTokens.removeAll()
+
+        guard let window = window else {
+            onChange?(false)
+            return
+        }
+
+        onChange?(window.isKeyWindow || window.isVisible)
+
+        observationTokens = [
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.didBecomeKeyNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.onChange?(true)
+            },
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.didResignKeyNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.onChange?(false)
+            }
+        ]
     }
 }
 
-struct KimiCodeLogo: View {
+// MARK: - Kimi Code 图标（复刻 web 认证页 logo，含眨眼 + 左右看动画）
+
+/// 用 Core Animation 直接驱动眼睛动画。
+/// 眼睛是独立的 CALayer，GPU 负责移动/缩放，不触发 SwiftUI 视图重算，
+/// 因此不会导致整个面板重新合成，CPU 占用极低。
+struct AnimatedKimiCodeLogo: View {
     var width: CGFloat = 44
-    var lookOffset: CGFloat = 0
-    var blinkScale: CGFloat = 1
+    let isAnimating: Bool
 
     var body: some View {
-        let scale = width / 32
-        let height = width * 22 / 32
+        KimiCodeLogoLayerViewWrapper(width: width, isAnimating: isAnimating)
+            .frame(width: width, height: width * 22 / 32)
+    }
+}
 
-        Canvas { context, _ in
-            let rect = CGRect(x: scale, y: scale, width: 30 * scale, height: 20 * scale)
-            let bodyPath = RoundedRectangle(cornerRadius: 6 * scale).path(in: rect)
-            context.fill(bodyPath, with: .color(.kimiBlue))
+struct KimiCodeLogoLayerViewWrapper: NSViewRepresentable {
+    let width: CGFloat
+    let isAnimating: Bool
 
-            context.blendMode = .destinationOut
+    func makeNSView(context: Context) -> KimiCodeLogoLayerView {
+        let view = KimiCodeLogoLayerView(frame: NSRect(x: 0, y: 0, width: width, height: width * 22 / 32))
+        view.logoWidth = width
+        return view
+    }
 
-            let eyeHeight = 8 * scale * blinkScale
-            let eyeY = (11 * scale) - (eyeHeight / 2)
+    func updateNSView(_ nsView: KimiCodeLogoLayerView, context: Context) {
+        nsView.logoWidth = width
+        nsView.setAnimationsPaused(!isAnimating)
+    }
+}
 
-            let eye1 = CGRect(
-                x: (11.8 + lookOffset) * scale,
-                y: eyeY,
-                width: 2.8 * scale,
-                height: eyeHeight
-            )
-            let eye2 = CGRect(
-                x: (17.4 + lookOffset) * scale,
-                y: eyeY,
-                width: 2.8 * scale,
-                height: eyeHeight
-            )
-            context.fill(
-                RoundedRectangle(cornerRadius: 1.4 * scale).path(in: eye1),
-                with: .color(.white)
-            )
-            context.fill(
-                RoundedRectangle(cornerRadius: 1.4 * scale).path(in: eye2),
-                with: .color(.white)
-            )
+final class KimiCodeLogoLayerView: NSView {
+    var logoWidth: CGFloat = 44 {
+        didSet { updateLayout() }
+    }
+
+    private let bodyLayer = CAShapeLayer()
+    private let leftEyeLayer = CAShapeLayer()
+    private let rightEyeLayer = CAShapeLayer()
+    private var isPaused = true
+    private var scale: CGFloat = 44.0 / 32.0
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupLayers()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var wantsUpdateLayer: Bool { true }
+
+    private func setupLayers() {
+        wantsLayer = true
+
+        let kimiBlue = NSColor(red: 0.23, green: 0.51, blue: 0.96, alpha: 1.0)
+
+        bodyLayer.fillColor = kimiBlue.cgColor
+        bodyLayer.shadowColor = kimiBlue.withAlphaComponent(0.35).cgColor
+        bodyLayer.shadowOpacity = 1
+        bodyLayer.shadowRadius = 8
+        bodyLayer.shadowOffset = CGSize(width: 0, height: -3)
+
+        updateEyeColors()
+
+        layer?.addSublayer(bodyLayer)
+        layer?.addSublayer(leftEyeLayer)
+        layer?.addSublayer(rightEyeLayer)
+
+        updateLayout()
+    }
+
+    private func updateEyeColors() {
+        let eyeColor = NSColor(name: nil, dynamicProvider: { appearance in
+            let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            return isDark
+                ? NSColor(red: 0x18 / 255.0, green: 0x18 / 255.0, blue: 0x17 / 255.0, alpha: 1.0)
+                : NSColor.white
+        })
+        leftEyeLayer.fillColor = eyeColor.cgColor
+        rightEyeLayer.fillColor = eyeColor.cgColor
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateEyeColors()
+    }
+
+    private var currentLookOffset: CGFloat = 0
+    private var lookIndex = 0
+    private var lookTimer: Timer?
+
+    private func updateLayout() {
+        scale = logoWidth / 32
+        let bodyRect = CGRect(x: scale, y: scale, width: 30 * scale, height: 20 * scale)
+
+        bodyLayer.path = NSBezierPath(
+            roundedRect: bodyRect,
+            xRadius: 6 * scale,
+            yRadius: 6 * scale
+        ).cgPath
+
+        let eyeWidth: CGFloat = 2.8 * scale
+        let eyeHeight: CGFloat = 8 * scale
+        let cornerRadius: CGFloat = 1.4 * scale
+        let eyeY: CGFloat = 11 * scale - eyeHeight / 2
+
+        let eyePath = NSBezierPath(
+            roundedRect: CGRect(origin: .zero, size: CGSize(width: eyeWidth, height: eyeHeight)),
+            xRadius: cornerRadius,
+            yRadius: cornerRadius
+        ).cgPath
+
+        leftEyeLayer.path = eyePath
+        rightEyeLayer.path = eyePath
+
+        leftEyeLayer.frame = CGRect(x: 11.8 * scale, y: eyeY, width: eyeWidth, height: eyeHeight)
+        rightEyeLayer.frame = CGRect(x: 17.4 * scale, y: eyeY, width: eyeWidth, height: eyeHeight)
+
+        addBlinkAnimation()
+        if !isPaused {
+            startRandomLooking()
         }
-        .frame(width: width, height: height)
-        .shadow(color: Color.kimiBlue.opacity(0.35), radius: 8, x: 0, y: 3)
+    }
+
+    private func addBlinkAnimation() {
+        leftEyeLayer.removeAnimation(forKey: "blink")
+        rightEyeLayer.removeAnimation(forKey: "blink")
+
+        // 眨眼：闭眼 0.08s、停留 0.04s、睁眼 0.08s，每 3 秒一次。
+        let close = CABasicAnimation(keyPath: "transform.scale.y")
+        close.fromValue = 1
+        close.toValue = 0.12
+        close.duration = 0.08
+        close.beginTime = 0
+
+        let hold = CABasicAnimation(keyPath: "transform.scale.y")
+        hold.fromValue = 0.12
+        hold.toValue = 0.12
+        hold.duration = 0.04
+        hold.beginTime = 0.08
+
+        let open = CABasicAnimation(keyPath: "transform.scale.y")
+        open.fromValue = 0.12
+        open.toValue = 1
+        open.duration = 0.08
+        open.beginTime = 0.12
+
+        let blink = CAAnimationGroup()
+        blink.animations = [close, hold, open]
+        blink.duration = 3.0
+        blink.repeatCount = .infinity
+        blink.isRemovedOnCompletion = false
+        blink.timeOffset = Double.random(in: 0..<3.0)
+
+        leftEyeLayer.add(blink, forKey: "blink")
+        rightEyeLayer.add(blink, forKey: "blink")
+    }
+
+    private func startRandomLooking() {
+        lookTimer?.invalidate()
+        leftEyeLayer.removeAnimation(forKey: "look")
+        rightEyeLayer.removeAnimation(forKey: "look")
+        currentLookOffset = 0
+        lookIndex = 0
+        scheduleNextLook(initial: true)
+    }
+
+    private func scheduleNextLook(initial: Bool = false) {
+        let pause = initial ? 0 : Double.random(in: 1.0...3.0)
+        lookTimer = Timer.scheduledTimer(withTimeInterval: pause, repeats: false) { [weak self] _ in
+            self?.performNextLook()
+        }
+    }
+
+    private func performNextLook() {
+        let amplitude = 5 * scale
+        let targets: [CGFloat] = [amplitude, 0, -amplitude, 0]
+        let nextTarget = targets[lookIndex % targets.count]
+        lookIndex += 1
+
+        let animation = CABasicAnimation(keyPath: "transform.translation.x")
+        animation.fromValue = currentLookOffset
+        animation.toValue = nextTarget
+        animation.duration = 0.3
+        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        animation.fillMode = .forwards
+        animation.isRemovedOnCompletion = false
+
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { [weak self] in
+            self?.currentLookOffset = nextTarget
+            self?.scheduleNextLook()
+        }
+        leftEyeLayer.add(animation, forKey: "look")
+        rightEyeLayer.add(animation, forKey: "look")
+        CATransaction.commit()
+    }
+
+    func setAnimationsPaused(_ paused: Bool) {
+        guard paused != isPaused else { return }
+        isPaused = paused
+        if paused {
+            lookTimer?.invalidate()
+            lookTimer = nil
+            pauseLayerAnimations()
+        } else {
+            resumeLayerAnimations()
+            startRandomLooking()
+        }
+    }
+
+    private func pauseLayerAnimations() {
+        let pausedTime = leftEyeLayer.convertTime(CACurrentMediaTime(), from: nil)
+        leftEyeLayer.speed = 0
+        leftEyeLayer.timeOffset = pausedTime
+        rightEyeLayer.speed = 0
+        rightEyeLayer.timeOffset = pausedTime
+    }
+
+    private func resumeLayerAnimations() {
+        let pausedTime = leftEyeLayer.timeOffset
+        leftEyeLayer.speed = 1
+        leftEyeLayer.timeOffset = 0
+        leftEyeLayer.beginTime = 0
+        let timeSincePause = leftEyeLayer.convertTime(CACurrentMediaTime(), from: nil) - pausedTime
+        leftEyeLayer.beginTime = timeSincePause
+
+        rightEyeLayer.speed = 1
+        rightEyeLayer.timeOffset = 0
+        rightEyeLayer.beginTime = timeSincePause
     }
 }
 
@@ -287,6 +496,7 @@ struct KimiMenu: View {
     @State private var showAppUpdateAlert = false
     @State private var showUpdateLog = false
     @State private var isHoveredUpdateLog = false
+    @State private var isMenuVisible = false
 
     private let consoleURL = URL(string: "https://www.kimi.com/code/console")!
     private let githubURL = URL(string: "https://github.com/xifandev/KimiCodeBar")!
@@ -295,7 +505,7 @@ struct KimiMenu: View {
         VStack(spacing: 14) {
             // Header
             HStack(spacing: 12) {
-                AnimatedKimiCodeLogo(width: 44)
+                AnimatedKimiCodeLogo(width: 44, isAnimating: isMenuVisible)
 
                 Text("KimiCodeBar")
                     .font(.system(size: 18, weight: .bold))
@@ -436,6 +646,7 @@ struct KimiMenu: View {
         .padding(16)
         .frame(width: 340)
         .background(Color.kimiPanelBackground)
+        .background(WindowVisibilityDetector(isVisible: $isMenuVisible))
         .popover(isPresented: $showSettings, arrowEdge: .bottom) {
             SettingsView()
         }

@@ -32,3 +32,4 @@ fastlane/test_output
 # Archives
 *.ipa
 *.app.dSYM.zip
+*.app.zip
