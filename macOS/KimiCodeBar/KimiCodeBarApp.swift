@@ -1054,7 +1054,7 @@ struct SettingsView: View {
                     }) {
                         Text(isEditingKey ? "保存" : "修改")
                     }
-                    .buttonStyle(KimiButtonStyle(isProminent: false))
+                    .buttonStyle(KimiButtonStyle(isProminent: true))
                     .disabled(isEditingKey && editingKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .cursor(isEditingKey && editingKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .arrow : .pointingHand)
                 }
