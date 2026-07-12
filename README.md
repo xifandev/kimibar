@@ -32,6 +32,13 @@
 1. 下载 Releases 中的最新版本
 2. 解压后将 `KimiCodeBar.app` 拖入「应用程序」文件夹，双击运行
 
+### 通过 Homebrew 安装
+
+```bash
+brew tap xifandev/kimicodebar https://github.com/xifandev/KimiCodeBar.git
+brew install --cask xifandev/kimicodebar/kimicodebar
+```
+
 ### 自行编译
 
 ```bash
