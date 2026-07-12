@@ -12,16 +12,19 @@
 **KimiCodeBar** 是为 [Kimi Code](https://www.kimi.com/code) 打造的用量实时监控小工具，采用HTTP协议查询，在菜单中极简轻量化运行。
 
 
-## 运行效果
+## 运行展示
 
-![展开面板](Assets/panel.gif)
+<p align="center">
+  <img src="Assets/panel.gif" width="48%" alt="暗夜模式">
+  <img src="Assets/panel2.png" width="48%" alt="浅色模式">
+</p>
 
-## 特性
+## 功能特性
 
 - **用量监控** — 菜单栏直观显示当前用量等信息
 - **新版本提醒** — 检测新版本并提示更新
-- **极简轻量化** — 采用HTTP协议轮询，无任何运行负载
-- **隐私安全** — Key设备本地存储，不上传云端，代码全部开源
+- **极简轻量化** — 采用HTTP轮询，超级轻量运行
+- **隐私安全** — 数据本地存储，代码全部开源
 
 ## 安装使用
 
@@ -29,18 +32,10 @@
 
 Download: https://github.com/xifandev/KimiCodeBar/releases
 
+## 支持系统
 
-## 隐私说明
-
-- API Key 保存在本地设备的 `NSUserDefaults`（`~/Library/Preferences/com.kimicodebar.app.plist`）中
-- 不上传到任何第三方服务器
-- 所有网络请求均直接发往 Kimi 官方 API（`api.kimi.com`）
-
-## 技术栈
-
-- Swift
-- SwiftUI
-- AppKit（MenuBarExtra）
+- MacOS
+- Windows（待开发）
 
 ## 许可证
 
