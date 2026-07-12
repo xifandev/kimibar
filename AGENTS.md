@@ -34,4 +34,4 @@
 
 ## 相关实现文件
 
-- `KimiBar/KimiBarApp.swift`：主面板、设置气泡、更新弹窗等 UI 组件。
+- `macOS/KimiCodeBar/KimiCodeBarApp.swift`：主面板、设置气泡、更新弹窗等 UI 组件。

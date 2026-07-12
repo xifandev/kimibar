@@ -8,17 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		BEB69A256FDB4EEE851CAF6D /* KimiCodeBar.app in Products */ = {isa = PBXBuildFile; fileRef = D44CECE74D174CC298CE6FE7; };
-		0C489D06D649421680AD66D7 /* KimiBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF9AB1130A844A89CE0075C; };
-		FFAC0CE5E70E4F17AAD3B902 /* KimiQuotaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F47923DD8C405BB3237AE1; };
+		0C489D06D649421680AD66D7 /* KimiCodeBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF9AB1130A844A89CE0075C; };
+		FFAC0CE5E70E4F17AAD3B902 /* KimiCodeBarQuotaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F47923DD8C405BB3237AE1; };
 		2ACCAAC36EA5468998428B73 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 510792D7AE86479585E4504C; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		D44CECE74D174CC298CE6FE7 /* KimiCodeBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KimiCodeBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2EF9AB1130A844A89CE0075C /* KimiBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiBarApp.swift; sourceTree = "<group>"; };
-		02F47923DD8C405BB3237AE1 /* KimiQuotaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiQuotaService.swift; sourceTree = "<group>"; };
+		2EF9AB1130A844A89CE0075C /* KimiCodeBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiCodeBarApp.swift; sourceTree = "<group>"; };
+		02F47923DD8C405BB3237AE1 /* KimiCodeBarQuotaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiCodeBarQuotaService.swift; sourceTree = "<group>"; };
 		510792D7AE86479585E4504C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		7D9C37304A73482ABB4CDE4D /* KimiBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KimiBar.entitlements; sourceTree = "<group>"; };
+		7D9C37304A73482ABB4CDE4D /* KimiCodeBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KimiCodeBar.entitlements; sourceTree = "<group>"; };
 		EA0ACF1E9B564B769FE86518 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -36,7 +36,7 @@
 		939F3BDDAEAC498B9399A2EA = {
 			isa = PBXGroup;
 			children = (
-				C7D94F1C4BCD423B99040DED /* KimiBar */,
+				C7D94F1C4BCD423B99040DED /* KimiCodeBar */,
 				6456A76DE5E141ED86925025 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -49,16 +49,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		C7D94F1C4BCD423B99040DED /* KimiBar */ = {
+		C7D94F1C4BCD423B99040DED /* KimiCodeBar */ = {
 			isa = PBXGroup;
 			children = (
-				2EF9AB1130A844A89CE0075C /* KimiBarApp.swift */,
-				02F47923DD8C405BB3237AE1 /* KimiQuotaService.swift */,
+				2EF9AB1130A844A89CE0075C /* KimiCodeBarApp.swift */,
+				02F47923DD8C405BB3237AE1 /* KimiCodeBarQuotaService.swift */,
 				510792D7AE86479585E4504C /* Assets.xcassets */,
-				7D9C37304A73482ABB4CDE4D /* KimiBar.entitlements */,
+				7D9C37304A73482ABB4CDE4D /* KimiCodeBar.entitlements */,
 				EA0ACF1E9B564B769FE86518 /* Info.plist */,
 			);
-			path = KimiBar;
+			path = KimiCodeBar;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -96,7 +96,7 @@
 					};
 				};
 			};
-			buildConfigurationList = D40F24D8F5FB4F7683A3287B /* Build configuration list for PBXProject "KimiBar" */;
+			buildConfigurationList = D40F24D8F5FB4F7683A3287B /* Build configuration list for PBXProject "KimiCodeBar" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = zhCN;
 			hasScannedForEncodings = 0;
@@ -131,8 +131,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C489D06D649421680AD66D7 /* KimiBarApp.swift in Sources */,
-				FFAC0CE5E70E4F17AAD3B902 /* KimiQuotaService.swift in Sources */,
+				0C489D06D649421680AD66D7 /* KimiCodeBarApp.swift in Sources */,
+				FFAC0CE5E70E4F17AAD3B902 /* KimiCodeBarQuotaService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -213,7 +213,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = KimiBar/KimiBar.entitlements;
+				CODE_SIGN_ENTITLEMENTS = KimiCodeBar/KimiCodeBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -222,7 +222,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_APP_INTENTS_SWIFT_CODE = NO;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = KimiBar/Info.plist;
+				INFOPLIST_FILE = KimiCodeBar/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -242,7 +242,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = KimiBar/KimiBar.entitlements;
+				CODE_SIGN_ENTITLEMENTS = KimiCodeBar/KimiCodeBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -251,7 +251,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_APP_INTENTS_SWIFT_CODE = NO;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = KimiBar/Info.plist;
+				INFOPLIST_FILE = KimiCodeBar/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

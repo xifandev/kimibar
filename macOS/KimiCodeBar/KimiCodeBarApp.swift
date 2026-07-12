@@ -46,7 +46,7 @@ final class ThemeManager: ObservableObject {
 }
 
 @main
-struct KimiBarApp: App {
+struct KimiCodeBarApp: App {
     @StateObject private var themeManager = ThemeManager.shared
 
     init() {
@@ -115,7 +115,7 @@ extension ShapeStyle where Self == Color {
 // MARK: - 菜单栏图标
 
 struct KimiLabel: View {
-    @StateObject private var model = KimiBarModel.shared
+    @StateObject private var model = KimiCodeBarModel.shared
 
     var body: some View {
         if let quota = model.quota {
@@ -270,7 +270,7 @@ struct KimiCodeLogo: View {
 // MARK: - 主面板
 
 struct KimiMenu: View {
-    @StateObject private var model = KimiBarModel.shared
+    @StateObject private var model = KimiCodeBarModel.shared
     @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
     @State private var showUpdateAlert = false
@@ -934,7 +934,7 @@ struct UpdateAlertView: View {
 // MARK: - 设置弹窗
 
 struct SettingsView: View {
-    @StateObject private var model = KimiBarModel.shared
+    @StateObject private var model = KimiCodeBarModel.shared
     @StateObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
@@ -1301,8 +1301,8 @@ extension View {
 // MARK: - 数据模型
 
 @MainActor
-final class KimiBarModel: ObservableObject {
-    static let shared = KimiBarModel()
+final class KimiCodeBarModel: ObservableObject {
+    static let shared = KimiCodeBarModel()
 
     @AppStorage("kimiApiKey") var key = ""
     @AppStorage("quotaRefreshInterval") var quotaRefreshInterval: Double = 5
@@ -1319,7 +1319,7 @@ final class KimiBarModel: ObservableObject {
     @Published var pendingReleaseNotes: String?
     @Published var updateErrorMessage: String?
 
-    private let service = KimiQuotaService()
+    private let service = KimiCodeBarQuotaService()
     private var timer: Timer?
     private var updateTimer: Timer?
 

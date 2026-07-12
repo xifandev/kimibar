@@ -23,7 +23,7 @@ struct KimiQuota: Equatable {
     let membershipLevel: String?
 }
 
-final class KimiQuotaService {
+final class KimiCodeBarQuotaService {
     private let isoFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

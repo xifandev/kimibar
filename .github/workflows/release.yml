@@ -18,17 +18,17 @@ jobs:
       - name: Build KimiCodeBar
         run: |
           xcodebuild \
-            -project KimiCodeBar.xcodeproj \
+            -project macOS/KimiCodeBar.xcodeproj \
             -target KimiCodeBar \
             -configuration Release \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=YES \
-            BUILD_DIR="$(pwd)/build"
+            BUILD_DIR="$(pwd)/macOS/build"
 
       - name: Package
         run: |
           mkdir -p dist
-          cp -R build/Release/KimiCodeBar.app dist/
+          cp -R macOS/build/Release/KimiCodeBar.app dist/
           cd dist
           zip -r "KimiCodeBar-${{ github.ref_name }}.zip" KimiCodeBar.app
 

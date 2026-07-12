@@ -15,9 +15,9 @@
 
 ## 运行效果
 
-![菜单栏显示](Screenshots/menu-bar.png)
+![菜单栏显示](Assets/menu-bar.png)
 
-![展开面板](Screenshots/panel.png)
+![展开面板](Assets/panel.png)
 
 ## 特性
 
@@ -38,7 +38,7 @@
 ```bash
 git clone https://github.com/xifandev/KimiCodeBar.git
 cd KimiCodeBar
-open KimiCodeBar.xcodeproj
+open macOS/KimiCodeBar.xcodeproj
 ```
 
 使用 Xcode 选择你的 Mac，点击 Run 即可。
