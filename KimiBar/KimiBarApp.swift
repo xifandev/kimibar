@@ -31,7 +31,15 @@ enum AppTheme: String, CaseIterable, Identifiable {
 @MainActor
 final class ThemeManager: ObservableObject {
     static let shared = ThemeManager()
-    @AppStorage("appTheme") var theme: AppTheme = .system
+    @AppStorage("appTheme") private var storedTheme: AppTheme = .system
+
+    var theme: AppTheme {
+        get { storedTheme }
+        set {
+            storedTheme = newValue
+            objectWillChange.send()
+        }
+    }
 }
 
 @main
@@ -132,10 +140,8 @@ private func percentageFont(for percentage: Int) -> Font {
 @MainActor
 enum MenuBarTextRenderer {
     static func image(weekly: Int, fiveHour: Int) -> NSImage {
-        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        let textColor = isDark
-            ? Color(red: 0.886, green: 0.910, blue: 0.961)
-            : Color(white: 0.15)
+        // 菜单栏图标始终使用固定的浅色文字，不跟随主题变化
+        let textColor = Color(red: 0.886, green: 0.910, blue: 0.961)
 
         let content = VStack(alignment: .trailing, spacing: -1) {
             HStack(spacing: 2) {
