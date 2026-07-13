@@ -262,7 +262,8 @@ enum MenuBarTextRenderer {
                 .monospacedDigit()
         }
         .foregroundStyle(textColor)
-        .frame(width: 120, height: 20, alignment: .trailing)
+        .frame(height: 20)
+        .fixedSize(horizontal: true, vertical: false)
 
         return render(content)
     }
