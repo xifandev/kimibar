@@ -495,7 +495,9 @@ struct KimiMenu: View {
     @State private var showUpdateAlert = false
     @State private var showAppUpdateAlert = false
     @State private var showUpdateLog = false
+    @State private var showUpdateErrorPopover = false
     @State private var isHoveredUpdateLog = false
+    @State private var isHoveredUpdateError = false
     @State private var isMenuVisible = false
 
     private let consoleURL = URL(string: "https://www.kimi.com/code/console")!
@@ -586,7 +588,7 @@ struct KimiMenu: View {
                         .foregroundStyle(.kimiTextSecondary)
 
                     if canShowUpdateLog {
-                        if model.pendingUpdateVersion != nil {
+                        if model.pendingUpdateVersion != nil || model.hasCachedKimiUpdate {
                             Text("发现新版本")
                                 .font(.system(size: 9, weight: .medium))
                                 .foregroundStyle(.orange)
@@ -594,6 +596,23 @@ struct KimiMenu: View {
                                 .padding(.vertical, 1)
                                 .background(Color.orange.opacity(0.12))
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
+                        } else if model.updateErrorMessage != nil && !model.updateErrorMessage!.isEmpty {
+                            Text("检查更新失败")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(isHoveredUpdateError ? .red.opacity(0.9) : .red)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(isHoveredUpdateError ? Color.red.opacity(0.18) : Color.red.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                                .contentShape(Rectangle())
+                                .cursor(.pointingHand)
+                                .onHover { isHoveredUpdateError = $0 }
+                                .onTapGesture {
+                                    showUpdateErrorPopover = true
+                                }
+                                .popover(isPresented: $showUpdateErrorPopover, arrowEdge: .bottom) {
+                                    UpdateErrorPopoverView(errorMessage: model.updateErrorMessage ?? "")
+                                }
                         } else {
                             Text("当前最新")
                                 .font(.system(size: 9, weight: .medium))
@@ -636,7 +655,11 @@ struct KimiMenu: View {
             .cursor(canShowUpdateLog ? .pointingHand : .arrow)
             .onTapGesture {
                 if canShowUpdateLog {
-                    showUpdateLog = true
+                    if model.hasCachedKimiUpdate || model.pendingUpdateVersion != nil {
+                        showUpdateAlert = true
+                    } else {
+                        showUpdateLog = true
+                    }
                 }
             }
             .popover(isPresented: $showUpdateLog, arrowEdge: .bottom) {
@@ -650,14 +673,15 @@ struct KimiMenu: View {
         .popover(isPresented: $showSettings, arrowEdge: .bottom) {
             SettingsView()
         }
-        .popover(isPresented: $showUpdateAlert, arrowEdge: .bottom) {
+        .popover(isPresented: $showUpdateAlert, arrowEdge: .trailing) {
             UpdateAlertView(
                 currentVersion: formatKimiVersion(model.kimiVersion),
                 newVersion: model.pendingUpdateVersion ?? "新版",
-                releaseNotes: model.pendingReleaseNotes ?? "暂无详细更新说明。",
                 onDismiss: {
                     showUpdateAlert = false
                     model.pendingUpdateVersion = nil
+                    // 一小时后再次提醒
+                    model.snoozedKimiUpdateUntil = Date().timeIntervalSince1970 + 3600
                 },
                 onInstall: {
                     showUpdateAlert = false
@@ -666,7 +690,7 @@ struct KimiMenu: View {
                 }
             )
         }
-        .popover(isPresented: $showAppUpdateAlert, arrowEdge: .bottom) {
+        .popover(isPresented: $showAppUpdateAlert, arrowEdge: .trailing) {
             AppUpdateAlertView(
                 currentVersion: appVersion(),
                 newVersion: model.pendingAppUpdateVersion ?? "新版",
@@ -682,12 +706,41 @@ struct KimiMenu: View {
             )
         }
         .onAppear {
-            Task { await model.loadKimiVersion() }
-            Task { await model.checkForAppUpdate() }
+            model.checkCachedKimiUpdate()
             if model.key.isEmpty {
                 showSettings = true
             } else if model.pendingUpdateVersion != nil {
                 showUpdateAlert = true
+            }
+
+            Task {
+                await model.loadKimiVersion()
+                await model.checkForKimiCLIUpdate()
+                await model.checkForAppUpdate()
+
+                if model.pendingAppUpdateVersion != nil && model.pendingUpdateVersion == nil && !showSettings {
+                    showAppUpdateAlert = true
+                }
+            }
+        }
+        .onChange(of: isMenuVisible) { _, visible in
+            if visible {
+                model.checkCachedKimiUpdate()
+                if model.key.isEmpty {
+                    showSettings = true
+                } else if model.pendingUpdateVersion != nil {
+                    showUpdateAlert = true
+                }
+
+                Task {
+                    await model.loadKimiVersion()
+                    await model.checkForKimiCLIUpdate()
+                    await model.checkForAppUpdate()
+
+                    if model.pendingAppUpdateVersion != nil && model.pendingUpdateVersion == nil && !showSettings {
+                        showAppUpdateAlert = true
+                    }
+                }
             }
         }
         .onChange(of: model.pendingAppUpdateVersion) { _, newValue in
@@ -711,10 +764,7 @@ struct KimiMenu: View {
             """
             tell application "Terminal"
                 activate
-                if not (exists window 1) then
-                    do script ""
-                end if
-                do script "kimi upgrade" in front window
+                do script "kimi upgrade"
             end tell
             """
         ]
@@ -1115,7 +1165,52 @@ struct CommunityButton: View {
 
 // MARK: - 中文更新日志抓取
 
-func fetchLatestChineseChangelog() async -> (version: String, notes: String)? {
+func fetchLatestKimiVersion() async -> (version: String?, error: String?) {
+    let url = URL(string: "https://moonshotai.github.io/kimi-code/zh/release-notes/changelog.md")!
+
+    // 先尝试 Range 请求，只拿前 4KB 快速解析版本号
+    var rangeRequest = URLRequest(url: url)
+    rangeRequest.setValue("KimiCodeBar/1.0", forHTTPHeaderField: "User-Agent")
+    rangeRequest.setValue("bytes=0-4095", forHTTPHeaderField: "Range")
+    rangeRequest.timeoutInterval = 10
+
+    do {
+        let (data, response) = try await URLSession.shared.data(for: rangeRequest)
+        if let httpResponse = response as? HTTPURLResponse,
+           (httpResponse.statusCode == 200 || httpResponse.statusCode == 206),
+           let text = String(data: data, encoding: .utf8),
+           let version = parseChineseChangelog(text)?.version {
+            return (version, nil)
+        }
+        // Range 请求成功但没能解析出版本号，继续回退到完整请求
+    } catch {
+        // Range 请求失败，继续回退到完整请求
+    }
+
+    // 回退：下载完整日志并解析版本号
+    var fullRequest = URLRequest(url: url)
+    fullRequest.setValue("KimiCodeBar/1.0", forHTTPHeaderField: "User-Agent")
+    fullRequest.timeoutInterval = 20
+
+    do {
+        let (data, response) = try await URLSession.shared.data(for: fullRequest)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            return (nil, "版本接口返回异常状态码：\(statusCode)")
+        }
+        guard let text = String(data: data, encoding: .utf8) else {
+            return (nil, "版本接口返回内容无法解析")
+        }
+        guard let version = parseChineseChangelog(text)?.version else {
+            return (nil, "版本接口返回内容中未找到版本号")
+        }
+        return (version, nil)
+    } catch {
+        return (nil, "版本接口请求失败：\(error.localizedDescription)")
+    }
+}
+
+func fetchLatestChineseChangelog() async -> (value: (version: String, notes: String)?, error: String?) {
     let url = URL(string: "https://moonshotai.github.io/kimi-code/zh/release-notes/changelog.md")!
     var request = URLRequest(url: url)
     request.setValue("KimiCodeBar/1.0", forHTTPHeaderField: "User-Agent")
@@ -1124,12 +1219,18 @@ func fetchLatestChineseChangelog() async -> (version: String, notes: String)? {
     do {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            return nil
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            return (nil, "日志接口返回异常状态码：\(statusCode)")
         }
-        guard let text = String(data: data, encoding: .utf8) else { return nil }
-        return parseChineseChangelog(text)
+        guard let text = String(data: data, encoding: .utf8) else {
+            return (nil, "日志接口返回内容无法解析")
+        }
+        guard let result = parseChineseChangelog(text) else {
+            return (nil, "日志接口返回内容中未找到版本信息")
+        }
+        return (result, nil)
     } catch {
-        return nil
+        return (nil, "日志接口请求失败：\(error.localizedDescription)")
     }
 }
 
@@ -1318,7 +1419,7 @@ struct GitHubRelease: Decodable {
     }
 }
 
-func fetchLatestGitHubRelease(owner: String, repo: String) async -> String? {
+func fetchLatestGitHubRelease(owner: String, repo: String) async -> (version: String?, error: String?) {
     let url = URL(string: "https://api.github.com/repos/\(owner)/\(repo)/releases/latest")!
     var request = URLRequest(url: url)
     request.setValue("KimiCodeBar/1.0", forHTTPHeaderField: "User-Agent")
@@ -1327,12 +1428,15 @@ func fetchLatestGitHubRelease(owner: String, repo: String) async -> String? {
     do {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            return nil
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            return (nil, "GitHub Release 接口返回异常状态码：\(statusCode)")
         }
         let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
-        return normalizeVersion(release.tagName)
+        return (normalizeVersion(release.tagName), nil)
+    } catch let decodingError as DecodingError {
+        return (nil, "GitHub Release 接口返回数据解析失败：\(decodingError.localizedDescription)")
     } catch {
-        return nil
+        return (nil, "GitHub Release 接口请求失败：\(error.localizedDescription)")
     }
 }
 
@@ -1341,9 +1445,9 @@ func fetchLatestGitHubRelease(owner: String, repo: String) async -> String? {
 struct UpdateAlertView: View {
     let currentVersion: String
     let newVersion: String
-    let releaseNotes: String
     let onDismiss: () -> Void
     let onInstall: () -> Void
+    @StateObject private var model = KimiCodeBarModel.shared
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -1373,11 +1477,24 @@ struct UpdateAlertView: View {
                         .foregroundStyle(.kimiTextPrimary)
 
                     ScrollView {
-                        Text(releaseNotes.isEmpty ? "暂无详细更新说明。" : releaseNotes)
-                            .font(.system(size: 12))
-                            .foregroundStyle(.kimiTextSecondary)
-                            .lineSpacing(4)
+                        if model.pendingReleaseNotes == nil || model.pendingReleaseNotes!.isEmpty {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.7)
+                                Text("正在加载更新内容…")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.kimiTextSecondary)
+                            }
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 20)
+                        } else {
+                            Text(model.pendingReleaseNotes!)
+                                .font(.system(size: 12))
+                                .foregroundStyle(.kimiTextSecondary)
+                                .lineSpacing(4)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                     .frame(maxHeight: 180)
                 }
@@ -1411,8 +1528,13 @@ struct UpdateAlertView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
         }
-        .frame(width: 520)
+        .frame(width: 400)
         .background(Color.kimiPanelBackground)
+        .onAppear {
+            Task {
+                await model.loadKimiReleaseNotesIfNeeded()
+            }
+        }
     }
 }
 
@@ -1557,6 +1679,118 @@ struct UpdateLogView: View {
             entries = await fetchChineseChangelogEntries(maxCount: 10)
             isLoading = false
         }
+    }
+}
+
+// MARK: - 更新错误提示气泡
+
+struct UpdateErrorPopoverView: View {
+    let errorMessage: String
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dismiss) private var dismiss
+    @State private var isHoveredCloseButton = false
+    @State private var isHoveredCopyButton = false
+    @State private var isHoveredIssueButton = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // 顶部标题
+            HStack(spacing: 12) {
+                Text("检查更新失败")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.kimiTextPrimary)
+
+                Spacer()
+
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(isHoveredCloseButton ? .kimiTextPrimary : .kimiTextSecondary)
+                        .frame(width: 24, height: 24)
+                        .background(isHoveredCloseButton ? Color.kimiTextPrimary.opacity(0.14) : Color.kimiTextPrimary.opacity(0.08))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .cursor(.pointingHand)
+                .onHover { isHoveredCloseButton = $0 }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+
+            // 优雅分割线
+            Divider()
+                .background(Color.kimiTextPrimary.opacity(0.10))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+            // 错误信息
+            ScrollView {
+                Text(errorMessage)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(.kimiTextSecondary)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: 120)
+            .padding(.horizontal, 16)
+
+            // 操作按钮
+            HStack(spacing: 10) {
+                Button(action: {
+                    let pasteboard = NSPasteboard.general
+                    pasteboard.clearContents()
+                    pasteboard.setString(errorMessage, forType: .string)
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 10))
+                        Text("复制错误信息")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundStyle(isHoveredCopyButton ? .kimiTextPrimary : .kimiTextSecondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(isHoveredCopyButton ? Color.kimiTextPrimary.opacity(0.14) : Color.kimiTextPrimary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .cursor(.pointingHand)
+                .onHover { isHoveredCopyButton = $0 }
+
+                Button(action: {
+                    let body = "## 检查更新接口错误反馈\n\n错误信息：\n```\n\(errorMessage)\n```\n\n请补充以下信息：\n- 当前 KimiCodeBar 版本：\(appVersion())\n- 当前网络环境：\n- 问题描述：\n"
+                    var components = URLComponents(string: "https://github.com/xifandev/KimiCodeBar/issues/new")!
+                    components.queryItems = [
+                        URLQueryItem(name: "title", value: "检查更新接口错误反馈"),
+                        URLQueryItem(name: "body", value: body)
+                    ]
+                    if let url = components.url {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.bubble")
+                            .font(.system(size: 10))
+                        Text("去 GitHub 反馈")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundStyle(isHoveredIssueButton ? .kimiTextPrimary : .kimiTextSecondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(isHoveredIssueButton ? Color.kimiTextPrimary.opacity(0.14) : Color.kimiTextPrimary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .cursor(.pointingHand)
+                .onHover { isHoveredIssueButton = $0 }
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+        .frame(width: 320)
+        .background(Color.kimiPanelBackground)
     }
 }
 
@@ -1965,6 +2199,9 @@ final class KimiCodeBarModel: ObservableObject {
     @AppStorage("quotaRefreshInterval") var quotaRefreshInterval: Double = 5
     @AppStorage("updateCheckInterval") var updateCheckInterval: Double = 30
     @AppStorage("ignoredAppUpdateVersion") var ignoredAppUpdateVersion: String = ""
+    @AppStorage("cachedKimiLatestVersion") var cachedKimiLatestVersion: String = ""
+    @AppStorage("cachedKimiReleaseNotes") var cachedKimiReleaseNotes: String = ""
+    @AppStorage("snoozedKimiUpdateUntil") var snoozedKimiUpdateUntil: Double = 0
 
     @Published var text = "-- · --"
     @Published var quota: KimiQuota?
@@ -1978,6 +2215,11 @@ final class KimiCodeBarModel: ObservableObject {
     @Published var updateErrorMessage: String?
 
     @Published var pendingAppUpdateVersion: String?
+
+    var hasCachedKimiUpdate: Bool {
+        guard !cachedKimiLatestVersion.isEmpty, kimiVersion != "未检测到", kimiVersion != "检测中…" else { return false }
+        return compareVersions(normalizeVersion(kimiVersion), normalizeVersion(cachedKimiLatestVersion)) == .orderedAscending
+    }
 
     private let service = KimiCodeBarQuotaService()
     private var timer: Timer?
@@ -2070,45 +2312,97 @@ final class KimiCodeBarModel: ObservableObject {
         guard !isCheckingUpdate else { return }
         await MainActor.run {
             isCheckingUpdate = true
-            updateErrorMessage = nil
         }
 
-        async let currentVersionTask = detectKimiCLIVersion()
-        async let changelogTask = fetchLatestChineseChangelog()
-
-        let current = await currentVersionTask
-        let changelog = await changelogTask
+        let current = await detectKimiCLIVersion()
 
         await MainActor.run {
             kimiVersion = current
+        }
+
+        guard current != "未检测到" else {
+            await MainActor.run {
+                isCheckingUpdate = false
+            }
+            return
+        }
+
+        let (latest, _) = await fetchLatestKimiVersion()
+        guard let latest = latest else {
+            await MainActor.run {
+                isCheckingUpdate = false
+            }
+            return
+        }
+
+        await MainActor.run {
+            cachedKimiLatestVersion = latest
             isCheckingUpdate = false
 
-            guard current != "未检测到" else {
-                updateErrorMessage = "未检测到 Kimi CLI"
-                return
-            }
-
-            guard let changelog = changelog else {
-                updateErrorMessage = "无法获取中文更新日志"
-                return
-            }
-
-            let latest = normalizeVersion(changelog.version)
             let currentNormalized = normalizeVersion(current)
+            let latestNormalized = normalizeVersion(latest)
 
-            if compareVersions(currentNormalized, latest) == .orderedAscending {
+            if compareVersions(currentNormalized, latestNormalized) == .orderedAscending {
+                // 如果还在"稍后提醒"的延迟期内，不设置 pendingUpdateVersion，也不发通知
+                let now = Date().timeIntervalSince1970
+                guard now >= snoozedKimiUpdateUntil else {
+                    return
+                }
+
                 // 避免重复通知：只有首次发现该版本时才发送通知
                 if pendingUpdateVersion != latest {
                     pendingUpdateVersion = latest
-                    pendingReleaseNotes = changelog.notes
+                    pendingReleaseNotes = cachedKimiReleaseNotes.isEmpty ? nil : cachedKimiReleaseNotes
+                    snoozedKimiUpdateUntil = 0
                     sendUpdateNotification(version: latest)
                 }
+            } else {
+                // 本地已经是最新版，清空延迟记录
+                snoozedKimiUpdateUntil = 0
+            }
+        }
+    }
+
+    func checkCachedKimiUpdate() {
+        guard !cachedKimiLatestVersion.isEmpty else { return }
+
+        let currentNormalized = normalizeVersion(kimiVersion)
+        let cachedNormalized = normalizeVersion(cachedKimiLatestVersion)
+
+        guard !currentNormalized.isEmpty, !cachedNormalized.isEmpty else { return }
+
+        if compareVersions(currentNormalized, cachedNormalized) == .orderedAscending {
+            // 如果还在延迟提醒期内，不弹窗
+            let now = Date().timeIntervalSince1970
+            guard now >= snoozedKimiUpdateUntil else { return }
+
+            if pendingUpdateVersion != cachedKimiLatestVersion {
+                pendingUpdateVersion = cachedKimiLatestVersion
+                pendingReleaseNotes = cachedKimiReleaseNotes.isEmpty ? nil : cachedKimiReleaseNotes
+                // 再次弹出时清空延迟记录
+                snoozedKimiUpdateUntil = 0
+            }
+        } else {
+            // 本地已经是最新版，清空延迟记录
+            snoozedKimiUpdateUntil = 0
+        }
+    }
+
+    func loadKimiReleaseNotesIfNeeded() async {
+        guard pendingReleaseNotes == nil || pendingReleaseNotes!.isEmpty else { return }
+
+        let (changelog, _) = await fetchLatestChineseChangelog()
+        await MainActor.run {
+            if let changelog = changelog {
+                pendingReleaseNotes = changelog.notes
+                cachedKimiReleaseNotes = changelog.notes
             }
         }
     }
 
     func checkForAppUpdate() async {
-        guard let latest = await fetchLatestGitHubRelease(owner: "xifandev", repo: "KimiCodeBar") else { return }
+        let (latest, _) = await fetchLatestGitHubRelease(owner: "xifandev", repo: "KimiCodeBar")
+        guard let latest = latest else { return }
 
         let current = normalizeVersion(appVersion())
 
