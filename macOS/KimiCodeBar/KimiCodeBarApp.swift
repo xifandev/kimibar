@@ -553,6 +553,20 @@ struct KimiMenu: View {
                     onOpenWeb: {
                         model.openKimiWeb()
                     },
+                    onStart: {
+                        isLoadingKimiServer = true
+                        Task {
+                            await model.startKimiServer()
+                            await MainActor.run { isLoadingKimiServer = false }
+                        }
+                    },
+                    onStop: {
+                        isLoadingKimiServer = true
+                        Task {
+                            await model.stopKimiServer()
+                            await MainActor.run { isLoadingKimiServer = false }
+                        }
+                    },
                     onRestart: {
                         isLoadingKimiServer = true
                         Task {
@@ -560,8 +574,12 @@ struct KimiMenu: View {
                             await MainActor.run { isLoadingKimiServer = false }
                         }
                     },
-                    onUpgradeAndRestart: {
-                        Task { await model.upgradeAndRestartKimiServer() }
+                    onRefresh: {
+                        isLoadingKimiServer = true
+                        Task {
+                            await model.refreshKimiServerState()
+                            await MainActor.run { isLoadingKimiServer = false }
+                        }
                     }
                 )
             }
@@ -1071,12 +1089,15 @@ struct KimiServerCard: View {
     let state: KimiServerState
     let isLoading: Bool
     let onOpenWeb: () -> Void
+    let onStart: () -> Void
+    let onStop: () -> Void
     let onRestart: () -> Void
-    let onUpgradeAndRestart: () -> Void
+    let onRefresh: () -> Void
 
     @State private var isHoveredOpenWeb = false
+    @State private var isHoveredToggle = false
     @State private var isHoveredRestart = false
-    @State private var isHoveredUpgrade = false
+    @State private var isHoveredRefresh = false
 
     private var statusColor: Color {
         switch state.status {
@@ -1089,79 +1110,82 @@ struct KimiServerCard: View {
         }
     }
 
-    private var statusText: String {
+    private var statusLabel: String {
         switch state.status {
         case .running:
-            return "运行中"
+            return "Kimi Web 运行中"
         case .stopped:
-            return "已停止"
-        case .error(let msg):
-            return msg
+            return "Kimi Web 已停止"
+        case .error:
+            return "Kimi Web 异常"
         case .unknown:
-            return "检测中…"
+            return "Kimi Web 检测中…"
         }
     }
 
-    private var detailText: String {
-        if isLoading || state.status == .unknown {
-            return "检测中…"
-        }
-        let version = formatKimiVersion(state.version)
-        switch state.status {
-        case .running:
-            return "v\(version) · 127.0.0.1:\(state.port) · \(state.connections) 个连接"
-        case .stopped, .error:
-            return "v\(version) · 127.0.0.1:\(state.port) · 已停止"
-        case .unknown:
-            return "检测中…"
-        }
+    private var toggleTitle: String {
+        state.status == .running ? "停止" : "启动"
+    }
+
+    private var isRunning: Bool {
+        state.status == .running
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text("Kimi Web")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.kimiTextPrimary)
-
-                Text(statusText)
-                    .font(.system(size: 10, weight: .medium))
+                Text(statusLabel)
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(statusColor)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(statusColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
 
                 Spacer()
+
+                if !state.version.isEmpty && state.version != "未检测到" && state.version != "检测中…" {
+                    Text(formatKimiVersion(state.version))
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.kimiTextSecondary)
+                }
             }
 
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(detailText)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.kimiTextSecondary)
-                    .lineLimit(1)
+            VStack(spacing: 8) {
+                Button(action: onOpenWeb) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "globe")
+                            .font(.system(size: 14, weight: .medium))
 
-                Spacer()
+                        Text("打开网页")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .foregroundStyle(.white)
+                    .background(isHoveredOpenWeb ? Color.kimiBlue.opacity(0.85) : Color.kimiBlue)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoading || !isRunning)
+                .cursor(isLoading || !isRunning ? .arrow : .pointingHand)
+                .onHover { isHoveredOpenWeb = $0 }
 
-                HStack(spacing: 4) {
-                    serverIconButton(
-                        icon: "globe",
-                        isHovered: $isHoveredOpenWeb,
-                        action: onOpenWeb,
+                HStack(spacing: 8) {
+                    serverActionButton(
+                        title: toggleTitle,
+                        isHovered: $isHoveredToggle,
+                        action: isRunning ? onStop : onStart,
                         disabled: isLoading
                     )
 
-                    serverIconButton(
-                        icon: "arrow.clockwise",
+                    serverActionButton(
+                        title: "重启",
                         isHovered: $isHoveredRestart,
                         action: onRestart,
                         disabled: isLoading
                     )
 
-                    serverIconButton(
-                        icon: "arrow.up.arrow.down",
-                        isHovered: $isHoveredUpgrade,
-                        action: onUpgradeAndRestart,
+                    serverActionButton(
+                        title: "刷新",
+                        isHovered: $isHoveredRefresh,
+                        action: onRefresh,
                         disabled: isLoading
                     )
                 }
@@ -1173,19 +1197,20 @@ struct KimiServerCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func serverIconButton(
-        icon: String,
+    private func serverActionButton(
+        title: String,
         isHovered: Binding<Bool>,
         action: @escaping () -> Void,
         disabled: Bool
     ) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
+            Text(title)
                 .font(.system(size: 13, weight: .medium))
-                .frame(width: 28, height: 28)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
                 .foregroundStyle(disabled ? .kimiTextTertiary : (isHovered.wrappedValue ? .kimiTextPrimary : .kimiTextSecondary))
                 .background(isHovered.wrappedValue && !disabled ? Color.kimiTextPrimary.opacity(0.10) : Color.kimiTextPrimary.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
         .disabled(disabled)
@@ -2482,9 +2507,22 @@ final class KimiCodeBarModel: ObservableObject {
     }
 
     func restartKimiServer() async {
+        await stopKimiServer()
+        await startKimiServer()
+    }
+
+    func startKimiServer() async {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let uid = getuid()
         let plistPath = "\(home)/Library/LaunchAgents/ai.moonshot.kimi-server.plist"
+
+        _ = await runShellCommand("/bin/launchctl bootstrap gui/\(uid) \(plistPath)")
+        try? await Task.sleep(nanoseconds: 3_000_000_000)
+        await refreshKimiServerState()
+    }
+
+    func stopKimiServer() async {
+        let uid = getuid()
 
         _ = await runShellCommand("/bin/launchctl bootout gui/\(uid)/ai.moonshot.kimi-server || true")
 
@@ -2496,8 +2534,6 @@ final class KimiCodeBarModel: ObservableObject {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
         }
 
-        _ = await runShellCommand("/bin/launchctl bootstrap gui/\(uid) \(plistPath)")
-        try? await Task.sleep(nanoseconds: 4_000_000_000)
         await refreshKimiServerState()
     }
 
@@ -2521,84 +2557,6 @@ final class KimiCodeBarModel: ObservableObject {
                 return ("", -1)
             }
         }.value
-    }
-
-    func upgradeAndRestartKimiServer() async {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let uid = getuid()
-        let scriptPath = "\(home)/.kimi-code/server/upgrade_and_restart.sh"
-        let kimiPath = await findKimiBinaryPath()
-        let plistPath = "\(home)/Library/LaunchAgents/ai.moonshot.kimi-server.plist"
-
-        let script = """
-        #!/bin/bash
-        set -e
-
-        KIMI_PATH="\(kimiPath)"
-
-        echo "=========================================="
-        echo "  Kimi Code Server 升级 / 重启脚本"
-        echo "=========================================="
-        echo ""
-
-        echo "[1/4] 正在升级 Kimi Code CLI..."
-        "$KIMI_PATH" upgrade
-        echo ""
-
-        echo "[2/4] 正在停止 Kimi Server..."
-        launchctl bootout gui/\(uid)/ai.moonshot.kimi-server || true
-
-        echo "等待旧进程退出..."
-        for i in {1..10}; do
-            if ! launchctl list | grep -q ai.moonshot.kimi-server; then
-                break
-            fi
-            sleep 1
-        done
-        echo ""
-
-        echo "[3/4] 正在启动 Kimi Server..."
-        launchctl bootstrap gui/\(uid) \(plistPath)
-        echo ""
-
-        echo "[4/4] 等待服务启动并验证..."
-        sleep 4
-
-        PID=$(launchctl list | grep ai.moonshot.kimi-server | awk '{print $1}')
-        VERSION=$("$KIMI_PATH" --version)
-
-        if [ -n "$PID" ] && [ "$PID" != "-" ]; then
-            echo "✅ Kimi Server 重启成功"
-            echo "   PID:    $PID"
-            echo "   版本:   $VERSION"
-            echo "   地址:   http://127.0.0.1:58627/"
-        else
-            echo "❌ 服务启动失败，请检查日志:"
-            echo "   \(home)/.kimi-code/server/launchd.out.log"
-        fi
-
-        echo ""
-        read -n 1 -p "按任意键关闭窗口..."
-        echo ""
-        """
-
-        let serverDir = "\(home)/.kimi-code/server"
-        try? FileManager.default.createDirectory(atPath: serverDir, withIntermediateDirectories: true, attributes: nil)
-        try? script.write(toFile: scriptPath, atomically: true, encoding: .utf8)
-        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath)
-
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        task.arguments = [
-            "-e",
-            """
-            tell application "Terminal"
-                activate
-                do script "\(scriptPath)"
-            end tell
-            """
-        ]
-        try? task.run()
     }
 
     private func detectKimiServerState() async -> KimiServerState {
@@ -2810,62 +2768,6 @@ final class KimiCodeBarModel: ObservableObject {
                 }
             }
             return ("", -1)
-        }.value
-    }
-
-    /// 查找可用的 kimi 可执行文件路径，优先返回绝对路径。
-    /// 用于生成脚本时避免硬编码某个安装位置。
-    private func findKimiBinaryPath() async -> String {
-        return await Task.detached(priority: .utility) {
-            let home = FileManager.default.homeDirectoryForCurrentUser.path
-            let candidates = [
-                "kimi",
-                "\(home)/.kimi-code/bin/kimi",
-                "\(home)/.kimi/bin/kimi",
-                "/usr/local/bin/kimi",
-                "/opt/homebrew/bin/kimi"
-            ]
-
-            for kimiPath in candidates {
-                let task = Process()
-                task.executableURL = URL(fileURLWithPath: "/bin/bash")
-                task.arguments = ["-lc", "\(kimiPath) --version"]
-
-                let pipe = Pipe()
-                task.standardOutput = pipe
-                task.standardError = pipe
-
-                do {
-                    try task.run()
-                    task.waitUntilExit()
-                    guard task.terminationStatus == 0 else { continue }
-
-                    // 如果候选是 PATH 里的 "kimi"，尽量解析成绝对路径，
-                    // 方便生成的脚本在 Terminal 里也能稳定调用。
-                    if kimiPath == "kimi" {
-                        let whichTask = Process()
-                        whichTask.executableURL = URL(fileURLWithPath: "/bin/bash")
-                        whichTask.arguments = ["-lc", "which kimi"]
-                        let whichPipe = Pipe()
-                        whichTask.standardOutput = whichPipe
-                        whichTask.standardError = whichPipe
-                        try? whichTask.run()
-                        whichTask.waitUntilExit()
-                        let data = whichPipe.fileHandleForReading.readDataToEndOfFile()
-                        if let absolutePath = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                           !absolutePath.isEmpty {
-                            return absolutePath
-                        }
-                    }
-
-                    return kimiPath
-                } catch {
-                    continue
-                }
-            }
-
-            // 兜底：让脚本依赖用户 Terminal 的 PATH
-            return "kimi"
         }.value
     }
 
