@@ -131,6 +131,7 @@ struct KimiLabel: View {
     var body: some View {
         if let quota = model.quota {
             Image(nsImage: MenuBarTextRenderer.image(
+                scheme: model.menuBarDisplayScheme,
                 weekly: quota.weekly.percentage,
                 fiveHour: quota.fiveHour.percentage
             ))
@@ -151,12 +152,44 @@ private func percentageFont(for percentage: Int) -> Font {
     .system(size: 10, weight: .medium, design: .default)
 }
 
+enum MenuBarDisplayScheme: String, CaseIterable, Identifiable {
+    case compact
+    case kPrefix
+    case kimiPrefix
+    case singleLine
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .compact: return "当前样式（7D / 5H）"
+        case .kPrefix: return "K 前缀"
+        case .kimiPrefix: return "Kimi 前缀"
+        case .singleLine: return "单行"
+        }
+    }
+}
+
 @MainActor
 enum MenuBarTextRenderer {
-    static func image(weekly: Int, fiveHour: Int) -> NSImage {
-        // 菜单栏图标始终使用固定的浅色文字，不跟随主题变化
-        let textColor = Color(red: 0.886, green: 0.910, blue: 0.961)
+    private static let textColor = Color(red: 0.886, green: 0.910, blue: 0.961)
 
+    static func image(scheme: MenuBarDisplayScheme, weekly: Int, fiveHour: Int) -> NSImage {
+        switch scheme {
+        case .compact:
+            return compactImage(weekly: weekly, fiveHour: fiveHour)
+        case .kPrefix:
+            return prefixImage(prefix: "K", weekly: weekly, fiveHour: fiveHour)
+        case .kimiPrefix:
+            return prefixImage(prefix: "Kimi", weekly: weekly, fiveHour: fiveHour)
+        case .singleLine:
+            return singleLineImage(weekly: weekly, fiveHour: fiveHour)
+        }
+    }
+
+    /// 原始紧凑样式：48pt 宽，两行 7D/5H。
+    /// 这是用户已经深度微调过的样式，原封不动保留。
+    private static func compactImage(weekly: Int, fiveHour: Int) -> NSImage {
         let content = VStack(alignment: .trailing, spacing: -1) {
             HStack(spacing: 2) {
                 Text("7D")
@@ -182,6 +215,71 @@ enum MenuBarTextRenderer {
         .foregroundStyle(textColor)
         .frame(width: 48, height: 20, alignment: .trailing)
 
+        return render(content)
+    }
+
+    /// 前缀样式：K / Kimi 放在第一行左侧，第二行缩进对齐。
+    private static func prefixImage(prefix: String, weekly: Int, fiveHour: Int) -> NSImage {
+        let prefixWidth: CGFloat = prefix == "K" ? 12 : 34
+        let totalWidth: CGFloat = 48 + prefixWidth + 4
+
+        let content = VStack(alignment: .trailing, spacing: -1) {
+            HStack(spacing: 2) {
+                Text(prefix)
+                    .font(.system(size: 10, weight: .bold, design: .default))
+                    .monospacedDigit()
+                    .frame(width: prefixWidth, alignment: .leading)
+                Text("7D")
+                    .font(.system(size: 10, weight: .medium, design: .default))
+                    .monospacedDigit()
+                    .frame(width: 16, alignment: .leading)
+                Text(percentageText(weekly))
+                    .font(percentageFont(for: weekly))
+                    .monospacedDigit()
+                    .frame(width: 30, alignment: .trailing)
+            }
+            HStack(spacing: 2) {
+                Text("")
+                    .font(.system(size: 10, weight: .bold, design: .default))
+                    .monospacedDigit()
+                    .frame(width: prefixWidth, alignment: .leading)
+                Text("5H")
+                    .font(.system(size: 10, weight: .medium, design: .default))
+                    .monospacedDigit()
+                    .frame(width: 16, alignment: .leading)
+                Text(percentageText(fiveHour))
+                    .font(percentageFont(for: fiveHour))
+                    .monospacedDigit()
+                    .frame(width: 30, alignment: .trailing)
+            }
+        }
+        .foregroundStyle(textColor)
+        .frame(width: totalWidth, height: 20, alignment: .trailing)
+
+        return render(content)
+    }
+
+    /// 单行样式：Kimi 84% · 6%
+    private static func singleLineImage(weekly: Int, fiveHour: Int) -> NSImage {
+        let content = HStack(spacing: 4) {
+            Text("Kimi")
+                .font(.system(size: 10, weight: .bold, design: .default))
+            Text(percentageText(weekly))
+                .font(percentageFont(for: weekly))
+                .monospacedDigit()
+            Text("·")
+                .font(.system(size: 10, weight: .medium))
+            Text(percentageText(fiveHour))
+                .font(percentageFont(for: fiveHour))
+                .monospacedDigit()
+        }
+        .foregroundStyle(textColor)
+        .frame(width: 88, height: 20, alignment: .trailing)
+
+        return render(content)
+    }
+
+    private static func render<V: View>(_ content: V) -> NSImage {
         let renderer = ImageRenderer(content: content)
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2.0
 
@@ -2413,6 +2511,7 @@ final class KimiCodeBarModel: ObservableObject {
     @AppStorage("kimiApiKey") var key = ""
     @AppStorage("quotaRefreshInterval") var quotaRefreshInterval: Double = 5
     @AppStorage("updateCheckInterval") var updateCheckInterval: Double = 30
+    @AppStorage("menuBarDisplayScheme") var menuBarDisplayScheme: MenuBarDisplayScheme = .compact
     @AppStorage("ignoredAppUpdateVersion") var ignoredAppUpdateVersion: String = ""
     @AppStorage("cachedKimiLatestVersion") var cachedKimiLatestVersion: String = ""
     @AppStorage("cachedKimiReleaseNotes") var cachedKimiReleaseNotes: String = ""
