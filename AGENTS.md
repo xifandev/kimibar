@@ -2,68 +2,46 @@
 
 ## 平台规范优先
 
-在实现任何涉及系统组件、框架 API 或平台特定行为的功能前，务必先阅读对应系统的官方文档 / Human Interface Guidelines / API Reference，确认推荐用法。不要凭直觉或跨平台经验直接套用。
+实现任何涉及系统组件、框架 API 或平台特定行为的功能前，先阅读对应系统的官方文档 / Human Interface Guidelines / API Reference，确认推荐用法。
 
-典型案例：本项目的主题切换曾尝试对 `MenuBarExtra` 内容视图使用 `.preferredColorScheme()` 强制切换 Light/Dark，结果触发 SwiftUI 运行时警告 `Publishing changes from within view updates is not allowed` 且界面无法正常响应。正确的 macOS 做法是通过 `NSApplication.shared.appearance` 控制应用整体外观，让 `NSColor` 动态配色自动适配。
+> 案例：主题切换不要对 `MenuBarExtra` 内容视图使用 `.preferredColorScheme()`，这会触发 SwiftUI 运行时警告 `Publishing changes from within view updates is not allowed`。应通过 `NSApplication.shared.appearance` 控制应用整体外观，让 `NSColor` 动态配色自动适配。
 
 ## 可点击元素反馈规范
 
-所有可点击的 UI 元素必须同时满足以下两条反馈规则，以保证 macOS 菜单栏应用的操作体验一致、清晰：
+所有可点击的 UI 元素必须同时满足：
 
 1. **鼠标悬停时显示手型光标（pointingHand）**
    - 使用自定义 `.cursor(.pointingHand)` 扩展实现。
-   - 系统原生按钮（如 `.borderedProminent`）默认不会变成手型光标，仍需显式添加。
+   - 即使是系统原生按钮（如 `.borderedProminent`）也需要显式添加。
 
 2. **鼠标悬停时提供高亮反馈**
-   - 必须改变背景色或前景色，让用户明确感知到当前元素可点击。
-   - 推荐做法：背景从 `Color.white.opacity(0.08)` 提升到 `Color.white.opacity(0.14)`，前景从 `.kimiTextSecondary` 提升到 `.kimiTextPrimary`。
+   - 改变背景色或前景色，让用户明确感知元素可点击。
+   - 推荐：背景从 `Color.white.opacity(0.08)` 提升到 `Color.white.opacity(0.14)`，前景从 `.kimiTextSecondary` 提升到 `.kimiTextPrimary`。
    - 使用 `@State private var isHoveredXXX` 配合 `.onHover { isHoveredXXX = $0 }` 实现。
 
-## 当前已应用该规范的位置
+新增可点击元素时检查：
 
-- `ActionButton`：面板底部四个操作按钮。
-- `CommunityButton`：面板右上角「社区版」GitHub 链接按钮。
-- `LinkRow`：通用链接行组件。
-- `SettingsView` 关闭按钮：设置气泡右上角圆形 × 按钮。
-- `SettingsView` 「去控制台获取」链接按钮。
-- `SettingsView` 「修改 / 保存 / 完成」按钮。
-- `UpdateAlertView` 「稍后再说 / 安装更新」按钮。
-- `AppUpdateAlertView` 「忽略本次更新 / 查看更新」按钮。
-- 版本卡片右侧的「更新日志」入口：悬停高亮并弹出更新记录气泡。
-- `UpdateLogView` 关闭按钮：更新日志气泡右上角圆形 × 按钮。
-- `ErrorMessageView` 错误信息复制按钮。
-
-## 新增可点击元素时的 checklist
-
-- [ ] 是否为该元素添加 `.cursor(.pointingHand)`？
-- [ ] 是否为该元素添加 `@State isHovered` 状态？
-- [ ] 是否在 `.onHover` 中改变背景/前景色，产生明显的高亮反馈？
+- [ ] 是否添加了 `.cursor(.pointingHand)`？
+- [ ] 是否添加了 `@State isHovered` 状态？
+- [ ] 是否在 `.onHover` 中改变背景/前景色？
 - [ ] 禁用状态下是否移除了手型光标并降低视觉权重？
 
-## 相关实现文件
+## 代码提交规范
 
-- `macOS/KimiCodeBar/KimiCodeBarApp.swift`：主面板、设置气泡、更新弹窗等 UI 组件。
-
-## 代码提交与推送规范
-
-- 完成修改后必须提交并推送到 GitHub，方便版本回退和追溯历史。
-- **Commit message 必须使用中文**，保持项目历史记录统一可读。标题和正文都用中文撰写，避免中英文混用。
+- 完成修改后必须提交并推送到 GitHub，方便版本回退、追溯历史，也便于识别 Agent 开发的内容。
+- Commit message 使用中文，标题和正文都用中文，避免中英文混用。
 
 ## 版本号管理
 
-- **App 本地版本号**来自 macOS 标准的 `CFBundleShortVersionString`，读取位置：
-  - `macOS/KimiCodeBar/Info.plist` -> `CFBundleShortVersionString`
-  - 代码中通过 `Bundle.main.infoDictionary?["CFBundleShortVersionString"]` 读取（不要硬编码）。
-- **Xcode 构建设置**里也有一个 `MARKETING_VERSION`，打包时会写入 `Info.plist`。因此发版前需要**同时改两处**，保持一致：
+- App 版本读取 `macOS/KimiCodeBar/Info.plist` 的 `CFBundleShortVersionString`，代码中通过 `Bundle.main.infoDictionary?["CFBundleShortVersionString"]` 读取。
+- 发版前需同时修改两处，保持一致：
   1. `macOS/KimiCodeBar/Info.plist` 的 `CFBundleShortVersionString`
-  2. `macOS/KimiCodeBar.xcodeproj/project.pbxproj` 里的 `MARKETING_VERSION`
-- **GitHub Release tag** 建议用 `v{VERSION}` 格式，例如 `v1.0.0`，`normalizeVersion` 会自动提取出版本号。
-- 发版时创建 GitHub Release 并上传 `.app.zip` 或 `.dmg` 即可；App 内的「查看更新」会跳转到 `https://github.com/xifandev/KimiCodeBar/releases/`。
+  2. `macOS/KimiCodeBar.xcodeproj/project.pbxproj` 的 `MARKETING_VERSION`
+- GitHub Release tag 使用 `v{VERSION}` 格式，例如 `v1.0.0`。
+- App 内「查看更新」跳转到 `https://github.com/xifandev/KimiCodeBar/releases/`。
 
 ## Release Notes 规范
 
-- **不要依赖 GitHub 自动生成的 Release Notes**。`softprops/action-gh-release` 的 `generate_release_notes: true` 会根据 commit/PR 标题自动拼凑，内容琐碎、重点不突出。
-- 每个版本发布前，在 `AGENTS.md` 中手动整理 **3~5 条核心更新点**，再由维护者复制到 GitHub Release 的 body 中。
-- 文案要求：一句话一条，不写细节堆砌，不写「修复了若干 bug」这类空话。
-
-
+- 不依赖 GitHub 自动生成的 Release Notes。
+- 每个版本整理 3~5 条核心更新点，由维护者复制到 GitHub Release body。
+- 一句话一条，不写细节堆砌，不写「修复了若干 bug」这类空话。
