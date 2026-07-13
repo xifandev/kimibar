@@ -7,18 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BEB69A256FDB4EEE851CAF6D /* KimiCodeBar.app in Products */ = {isa = PBXBuildFile; fileRef = D44CECE74D174CC298CE6FE7; };
-		0C489D06D649421680AD66D7 /* KimiCodeBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF9AB1130A844A89CE0075C; };
-		FFAC0CE5E70E4F17AAD3B902 /* KimiCodeBarQuotaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F47923DD8C405BB3237AE1; };
-		2ACCAAC36EA5468998428B73 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 510792D7AE86479585E4504C; };
+		0C489D06D649421680AD66D7 /* KimiCodeBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF9AB1130A844A89CE0075C /* KimiCodeBarApp.swift */; };
+		2ACCAAC36EA5468998428B73 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 510792D7AE86479585E4504C /* Assets.xcassets */; };
+		FFAC0CE5E70E4F17AAD3B902 /* KimiCodeBarQuotaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F47923DD8C405BB3237AE1 /* KimiCodeBarQuotaService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		D44CECE74D174CC298CE6FE7 /* KimiCodeBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KimiCodeBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2EF9AB1130A844A89CE0075C /* KimiCodeBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiCodeBarApp.swift; sourceTree = "<group>"; };
 		02F47923DD8C405BB3237AE1 /* KimiCodeBarQuotaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiCodeBarQuotaService.swift; sourceTree = "<group>"; };
+		2EF9AB1130A844A89CE0075C /* KimiCodeBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiCodeBarApp.swift; sourceTree = "<group>"; };
 		510792D7AE86479585E4504C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7D9C37304A73482ABB4CDE4D /* KimiCodeBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KimiCodeBar.entitlements; sourceTree = "<group>"; };
+		D44CECE74D174CC298CE6FE7 /* KimiCodeBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KimiCodeBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EA0ACF1E9B564B769FE86518 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -33,20 +32,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		939F3BDDAEAC498B9399A2EA = {
-			isa = PBXGroup;
-			children = (
-				C7D94F1C4BCD423B99040DED /* KimiCodeBar */,
-				6456A76DE5E141ED86925025 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
 		6456A76DE5E141ED86925025 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				D44CECE74D174CC298CE6FE7 /* KimiCodeBar.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		939F3BDDAEAC498B9399A2EA = {
+			isa = PBXGroup;
+			children = (
+				C7D94F1C4BCD423B99040DED /* KimiCodeBar */,
+				6456A76DE5E141ED86925025 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 		C7D94F1C4BCD423B99040DED /* KimiCodeBar */ = {
@@ -139,6 +138,97 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		9597893A2DD1474881E9922A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = KimiCodeBar/KimiCodeBar.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_APP_INTENTS = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_APP_INTENTS_SWIFT_CODE = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KimiCodeBar/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kimicodebar.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A3AD12A0E261486EA1E61006 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = KimiCodeBar/KimiCodeBar.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_APP_INTENTS = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_APP_INTENTS_SWIFT_CODE = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KimiCodeBar/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kimicodebar.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DAEEA2C5D03D45FC8C820719 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOSAR = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
 		F1F285C372544E229FABB4D2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -177,114 +267,23 @@
 			};
 			name = Debug;
 		};
-		DAEEA2C5D03D45FC8C820719 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOSAR = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				SDKROOT = macosx;
-				SWIFT_COMPILATION_MODE = wholemodule;
-			};
-			name = Release;
-		};
-		A3AD12A0E261486EA1E61006 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = KimiCodeBar/KimiCodeBar.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				ENABLE_HARDENED_RUNTIME = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
-				ENABLE_APP_INTENTS = NO;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_APP_INTENTS_SWIFT_CODE = NO;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = KimiCodeBar/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 1.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kimicodebar.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		9597893A2DD1474881E9922A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = KimiCodeBar/KimiCodeBar.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				ENABLE_HARDENED_RUNTIME = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
-				ENABLE_APP_INTENTS = NO;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_APP_INTENTS_SWIFT_CODE = NO;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = KimiCodeBar/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 1.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kimicodebar.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		D40F24D8F5FB4F7683A3287B /* Build configuration list for PBXProject "KimiCodeBar" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F1F285C372544E229FABB4D2 /* Debug */,
-				DAEEA2C5D03D45FC8C820719 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		AC7D9800D5E645389FC3B470 /* Build configuration list for PBXNativeTarget "KimiCodeBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A3AD12A0E261486EA1E61006 /* Debug */,
 				9597893A2DD1474881E9922A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D40F24D8F5FB4F7683A3287B /* Build configuration list for PBXProject "KimiCodeBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1F285C372544E229FABB4D2 /* Debug */,
+				DAEEA2C5D03D45FC8C820719 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
