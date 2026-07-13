@@ -162,7 +162,7 @@ enum MenuBarDisplayScheme: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .compact: return "当前样式（7D / 5H）"
+        case .compact: return "默认样式"
         case .kPrefix: return "K 前缀"
         case .kimiPrefix: return "Kimi 前缀"
         case .singleLine: return "单行"
@@ -220,15 +220,15 @@ enum MenuBarTextRenderer {
 
     /// 前缀样式：K / Kimi 放在第一行左侧，第二行缩进对齐。
     private static func prefixImage(prefix: String, weekly: Int, fiveHour: Int) -> NSImage {
-        let prefixWidth: CGFloat = prefix == "K" ? 12 : 34
+        let prefixWidth: CGFloat = prefix == "K" ? 16 : 38
         let totalWidth: CGFloat = 48 + prefixWidth + 4
 
         let content = VStack(alignment: .trailing, spacing: -1) {
             HStack(spacing: 2) {
                 Text(prefix)
-                    .font(.system(size: 10, weight: .bold, design: .default))
+                    .font(.system(size: 14, weight: .bold, design: .default))
                     .monospacedDigit()
-                    .frame(width: prefixWidth, alignment: .leading)
+                    .frame(width: prefixWidth, height: 20, alignment: .leading)
                 Text("7D")
                     .font(.system(size: 10, weight: .medium, design: .default))
                     .monospacedDigit()
@@ -274,7 +274,7 @@ enum MenuBarTextRenderer {
                 .monospacedDigit()
         }
         .foregroundStyle(textColor)
-        .frame(width: 88, height: 20, alignment: .trailing)
+        .frame(width: 110, height: 20, alignment: .trailing)
 
         return render(content)
     }
@@ -1371,13 +1371,15 @@ struct LinkRow: View {
     let title: String
     let icon: String?
     let imageName: String?
+    let imageSize: CGFloat
     let url: URL
     @State private var isHovered = false
 
-    init(title: String, icon: String? = nil, imageName: String? = nil, url: URL) {
+    init(title: String, icon: String? = nil, imageName: String? = nil, imageSize: CGFloat = 14, url: URL) {
         self.title = title
         self.icon = icon
         self.imageName = imageName
+        self.imageSize = imageSize
         self.url = url
     }
 
@@ -1389,10 +1391,10 @@ struct LinkRow: View {
                         .renderingMode(.template)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 14, height: 14)
+                        .frame(width: imageSize, height: imageSize)
                 } else if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 11))
+                        .font(.system(size: imageSize))
                 }
 
                 Text(title)
@@ -2122,18 +2124,21 @@ final class SettingsWindowManager {
 
 enum SettingsPane: String, CaseIterable, Identifiable {
     case basic
+    case about
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .basic: return "基本设置"
+        case .about: return "关于"
         }
     }
 
     var icon: String {
         switch self {
         case .basic: return "gear"
+        case .about: return "info.circle"
         }
     }
 }
@@ -2143,14 +2148,28 @@ struct SettingsRootView: View {
 
     var body: some View {
         HSplitView {
-            List(SettingsPane.allCases, selection: $selectedPane) { pane in
-                Label(pane.title, systemImage: pane.icon)
-                    .tag(pane)
-            }
-            .listStyle(.sidebar)
-            .frame(minWidth: 160, idealWidth: 180, maxWidth: 220)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("设置")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 10)
 
-            BasicSettingsView()
+                List(SettingsPane.allCases, selection: $selectedPane) { pane in
+                    Label(pane.title, systemImage: pane.icon)
+                        .tag(pane)
+                }
+                .listStyle(.sidebar)
+            }
+            .frame(minWidth: 160, idealWidth: 160, maxWidth: 220)
+
+            switch selectedPane {
+            case .basic:
+                BasicSettingsView()
+            case .about:
+                AboutSettingsView()
+            }
         }
     }
 }
@@ -2180,12 +2199,17 @@ struct BasicSettingsView: View {
             VStack(spacing: 20) {
                 Form {
                     Section {
-                        Picker("", selection: $themeManager.theme) {
-                            ForEach(AppTheme.allCases) { theme in
-                                Text(theme.displayName).tag(theme)
+                        HStack {
+                            Picker("", selection: $themeManager.theme) {
+                                ForEach(AppTheme.allCases) { theme in
+                                    Text(theme.displayName).tag(theme)
+                                }
                             }
+                            .pickerStyle(.segmented)
+                            .fixedSize()
+
+                            Spacer()
                         }
-                        .pickerStyle(.segmented)
                     } header: {
                         Text("外观")
                     } footer: {
@@ -2251,9 +2275,10 @@ struct BasicSettingsView: View {
                     }
 
                     Section {
-                        HStack {
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
                             Text("额度刷新间隔")
-                            Spacer()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
                             HStack(spacing: 6) {
                                 TextField("分钟", text: $quotaIntervalText)
                                     .textFieldStyle(.roundedBorder)
@@ -2270,11 +2295,13 @@ struct BasicSettingsView: View {
                                     .font(.system(size: 12))
                                     .foregroundStyle(.secondary)
                             }
+                            .fixedSize()
                         }
 
-                        HStack {
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
                             Text("检查更新间隔")
-                            Spacer()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
                             HStack(spacing: 6) {
                                 TextField("分钟", text: $updateIntervalText)
                                     .textFieldStyle(.roundedBorder)
@@ -2291,6 +2318,7 @@ struct BasicSettingsView: View {
                                     .font(.system(size: 12))
                                     .foregroundStyle(.secondary)
                             }
+                            .fixedSize()
                         }
                     } header: {
                         Text("自动刷新")
@@ -2301,12 +2329,17 @@ struct BasicSettingsView: View {
                     }
 
                     Section {
-                        Picker("显示方案", selection: $model.menuBarDisplayScheme) {
-                            ForEach(MenuBarDisplayScheme.allCases) { scheme in
-                                Text(scheme.displayName).tag(scheme)
+                        HStack {
+                            Picker("", selection: $model.menuBarDisplayScheme) {
+                                ForEach(MenuBarDisplayScheme.allCases) { scheme in
+                                    Text(scheme.displayName).tag(scheme)
+                                }
                             }
+                            .pickerStyle(.segmented)
+                            .fixedSize()
+
+                            Spacer()
                         }
-                        .pickerStyle(.radioGroup)
 
                         HStack(spacing: 12) {
                             Text("实时预览")
@@ -2331,41 +2364,13 @@ struct BasicSettingsView: View {
                             }
                         }
                     } header: {
-                        Text("菜单栏显示方案")
+                        Text("菜单栏样式")
                     } footer: {
                         Text("默认方案保留原有的 7D / 5H 紧凑样式，其他方案会在菜单栏显示更多信息。")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
 
-                    Section {
-                        VStack(spacing: 16) {
-                            AnimatedKimiCodeLogo(width: 64, isAnimating: true)
-
-                            Text("KimiCodeBar")
-                                .font(.system(size: 22, weight: .bold))
-
-                            Text("版本 \(appVersion())")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.secondary)
-
-                            if model.kimiVersion != "检测中…" && model.kimiVersion != "未检测到" {
-                                Text("KimiCode CLI \(formatKimiVersion(model.kimiVersion))")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            HStack(spacing: 12) {
-                                LinkRow(title: "GitHub", icon: "arrow.up.right", url: URL(string: "https://github.com/xifandev/KimiCodeBar")!)
-                                LinkRow(title: "反馈问题", icon: "exclamationmark.bubble", url: URL(string: "https://github.com/xifandev/KimiCodeBar/issues")!)
-                            }
-                            .padding(.top, 8)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 24)
-                    } header: {
-                        Text("关于")
-                    }
                 }
                 .formStyle(.grouped)
             }
@@ -2421,6 +2426,55 @@ struct BasicSettingsView: View {
         let prefix = String(key.prefix(7))
         let suffix = String(key.suffix(5))
         return "\(prefix)...\(suffix)"
+    }
+}
+
+// MARK: - 关于
+
+struct AboutSettingsView: View {
+    @StateObject private var model = KimiCodeBarModel.shared
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                VStack(spacing: 16) {
+                    AnimatedKimiCodeLogo(width: 64, isAnimating: true)
+
+                    Text("KimiCodeBar")
+                        .font(.system(size: 22, weight: .bold))
+
+                    Text("版本 \(appVersion())")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    if model.kimiVersion != "检测中…" && model.kimiVersion != "未检测到" {
+                        Text("KimiCode CLI \(formatKimiVersion(model.kimiVersion))")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack(spacing: 12) {
+                        LinkRow(
+                            title: "GitHub",
+                            imageName: "github-icon",
+                            imageSize: 16,
+                            url: URL(string: "https://github.com/xifandev/KimiCodeBar")!
+                        )
+                        LinkRow(
+                            title: "反馈问题",
+                            icon: "exclamationmark.bubble",
+                            url: URL(string: "https://github.com/xifandev/KimiCodeBar/issues")!
+                        )
+                    }
+                    .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(Color.kimiCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .padding()
+        }
     }
 }
 
