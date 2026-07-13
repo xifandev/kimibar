@@ -561,7 +561,7 @@ struct KimiMenu: View {
                         }
                     },
                     onUpgradeAndRestart: {
-                        model.upgradeAndRestartKimiServer()
+                        Task { await model.upgradeAndRestartKimiServer() }
                     }
                 )
             }
@@ -2522,14 +2522,18 @@ final class KimiCodeBarModel: ObservableObject {
         }.value
     }
 
-    func upgradeAndRestartKimiServer() {
+    func upgradeAndRestartKimiServer() async {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let uid = getuid()
         let scriptPath = "\(home)/.kimi-code/server/upgrade_and_restart.sh"
+        let kimiPath = await findKimiBinaryPath()
+        let plistPath = "\(home)/Library/LaunchAgents/ai.moonshot.kimi-server.plist"
 
         let script = """
         #!/bin/bash
         set -e
+
+        KIMI_PATH="\(kimiPath)"
 
         echo "=========================================="
         echo "  Kimi Code Server 升级 / 重启脚本"
@@ -2537,7 +2541,7 @@ final class KimiCodeBarModel: ObservableObject {
         echo ""
 
         echo "[1/4] 正在升级 Kimi Code CLI..."
-        \(home)/.kimi-code/bin/kimi upgrade
+        "$KIMI_PATH" upgrade
         echo ""
 
         echo "[2/4] 正在停止 Kimi Server..."
@@ -2553,14 +2557,14 @@ final class KimiCodeBarModel: ObservableObject {
         echo ""
 
         echo "[3/4] 正在启动 Kimi Server..."
-        launchctl bootstrap gui/\(uid) \(home)/Library/LaunchAgents/ai.moonshot.kimi-server.plist
+        launchctl bootstrap gui/\(uid) \(plistPath)
         echo ""
 
         echo "[4/4] 等待服务启动并验证..."
         sleep 4
 
         PID=$(launchctl list | grep ai.moonshot.kimi-server | awk '{print $1}')
-        VERSION=$(\(home)/.kimi-code/bin/kimi --version)
+        VERSION=$("$KIMI_PATH" --version)
 
         if [ -n "$PID" ] && [ "$PID" != "-" ]; then
             echo "✅ Kimi Server 重启成功"
@@ -2805,6 +2809,62 @@ final class KimiCodeBarModel: ObservableObject {
                 }
             }
             return ("", -1)
+        }.value
+    }
+
+    /// 查找可用的 kimi 可执行文件路径，优先返回绝对路径。
+    /// 用于生成脚本时避免硬编码某个安装位置。
+    private func findKimiBinaryPath() async -> String {
+        return await Task.detached(priority: .utility) {
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            let candidates = [
+                "kimi",
+                "\(home)/.kimi-code/bin/kimi",
+                "\(home)/.kimi/bin/kimi",
+                "/usr/local/bin/kimi",
+                "/opt/homebrew/bin/kimi"
+            ]
+
+            for kimiPath in candidates {
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/bin/bash")
+                task.arguments = ["-lc", "\(kimiPath) --version"]
+
+                let pipe = Pipe()
+                task.standardOutput = pipe
+                task.standardError = pipe
+
+                do {
+                    try task.run()
+                    task.waitUntilExit()
+                    guard task.terminationStatus == 0 else { continue }
+
+                    // 如果候选是 PATH 里的 "kimi"，尽量解析成绝对路径，
+                    // 方便生成的脚本在 Terminal 里也能稳定调用。
+                    if kimiPath == "kimi" {
+                        let whichTask = Process()
+                        whichTask.executableURL = URL(fileURLWithPath: "/bin/bash")
+                        whichTask.arguments = ["-lc", "which kimi"]
+                        let whichPipe = Pipe()
+                        whichTask.standardOutput = whichPipe
+                        whichTask.standardError = whichPipe
+                        try? whichTask.run()
+                        whichTask.waitUntilExit()
+                        let data = whichPipe.fileHandleForReading.readDataToEndOfFile()
+                        if let absolutePath = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                           !absolutePath.isEmpty {
+                            return absolutePath
+                        }
+                    }
+
+                    return kimiPath
+                } catch {
+                    continue
+                }
+            }
+
+            // 兜底：让脚本依赖用户 Terminal 的 PATH
+            return "kimi"
         }.value
     }
 
