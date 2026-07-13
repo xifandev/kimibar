@@ -155,8 +155,14 @@ private func percentageFont(for percentage: Int) -> Font {
 enum MenuBarDisplayScheme: String, CaseIterable, Identifiable {
     case compact
     case kPrefix
-    case kimiPrefix
     case singleLine
+
+    /// 旧 case，保留以避免已保存偏好崩溃，但不在 UI 中展示。
+    case kimiPrefix
+
+    static var allCases: [MenuBarDisplayScheme] {
+        [.compact, .kPrefix, .singleLine]
+    }
 
     var id: String { rawValue }
 
@@ -164,8 +170,8 @@ enum MenuBarDisplayScheme: String, CaseIterable, Identifiable {
         switch self {
         case .compact: return "默认样式"
         case .kPrefix: return "K 前缀"
-        case .kimiPrefix: return "Kimi 前缀"
         case .singleLine: return "单行"
+        case .kimiPrefix: return "Kimi 前缀"
         }
     }
 }
@@ -220,11 +226,11 @@ enum MenuBarTextRenderer {
 
     /// 前缀样式：K / Kimi 作为左侧大字号前缀，右侧上下两行百分比。
     private static func prefixImage(prefix: String, weekly: Int, fiveHour: Int) -> NSImage {
-        let prefixWidth: CGFloat = prefix == "K" ? 18 : 40
+        let prefixWidth: CGFloat = prefix == "K" ? 14 : 38
         let percentageWidth: CGFloat = 36
-        let totalWidth: CGFloat = prefixWidth + 6 + percentageWidth
+        let totalWidth: CGFloat = prefixWidth + 3 + percentageWidth
 
-        let content = HStack(alignment: .center, spacing: 6) {
+        let content = HStack(alignment: .center, spacing: 3) {
             Text(prefix)
                 .font(.system(size: 20, weight: .bold, design: .default))
                 .monospacedDigit()
