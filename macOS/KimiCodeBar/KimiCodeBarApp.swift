@@ -2167,6 +2167,7 @@ struct SettingsRootView: View {
                 AboutSettingsView()
             }
         }
+        .toolbar(removing: .sidebarToggle)
     }
 }
 
