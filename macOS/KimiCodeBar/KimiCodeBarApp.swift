@@ -2126,6 +2126,7 @@ final class SettingsWindowManager {
 
 enum SettingsPane: String, CaseIterable, Identifiable {
     case basic
+    case archive
     case about
 
     var id: String { rawValue }
@@ -2133,6 +2134,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .basic: return "基本设置"
+        case .archive: return "自动归档"
         case .about: return "关于"
         }
     }
@@ -2140,6 +2142,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .basic: return "gear"
+        case .archive: return "archivebox"
         case .about: return "info.circle"
         }
     }
@@ -2172,6 +2175,8 @@ struct SettingsRootView: View {
             switch selectedPane {
             case .basic:
                 BasicSettingsView()
+            case .archive:
+                ArchiveSettingsView()
             case .about:
                 AboutSettingsView()
             }
@@ -2332,19 +2337,25 @@ struct BasicSettingsView: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(.kimiTextPrimary)
 
-                // 外观
-                SettingsCard(title: "外观") {
-                    SettingsCardRow(title: "主题") {
-                        Picker("", selection: $themeManager.theme) {
-                            ForEach(AppTheme.allCases) { theme in
-                                Text(theme.displayName).tag(theme)
-                            }
+                // 外观主题
+                HStack(alignment: .center, spacing: 16) {
+                    Text("外观主题")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.kimiTextPrimary)
+
+                    Spacer()
+
+                    Picker("", selection: $themeManager.theme) {
+                        ForEach(AppTheme.allCases) { theme in
+                            Text(theme.displayName).tag(theme)
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(width: 180)
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 180)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 13)
 
                 // API Key
                 SettingsCard(title: "API Key") {
@@ -2566,6 +2577,27 @@ struct AboutSettingsView: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(.kimiTextPrimary)
 
+                // GitHub 开源社区卡片
+                GitHubCommunityCard()
+
+                // 特性亮点
+                HStack(alignment: .top, spacing: 16) {
+                    FeatureHighlightCard(
+                        icon: "sparkles",
+                        iconColor: .kimiBlue,
+                        title: "量身定制",
+                        description: "为 Kimi Code 量身设计的用量监控小工具，在菜单栏轻量化运行，限额一目了然。"
+                    )
+
+                    FeatureHighlightCard(
+                        icon: "lock.shield",
+                        iconColor: .green,
+                        title: "隐私安全",
+                        description: "数据仅本地存储，所有 API 只与 Kimi 官方通信，代码全部开源可审计。"
+                    )
+                }
+
+                // 应用信息
                 SettingsCard {
                     VStack(spacing: 16) {
                         AnimatedKimiCodeLogo(width: 64, isAnimating: true)
@@ -2609,6 +2641,170 @@ struct AboutSettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Color.kimiPanelBackground)
+    }
+}
+
+// MARK: - GitHub 社区开源卡片
+
+struct GitHubCommunityCard: View {
+    @State private var isHoveredRepo = false
+    @State private var isHoveredIssue = false
+
+    private let repoURL = URL(string: "https://github.com/xifandev/KimiCodeBar")!
+    private let issuesURL = URL(string: "https://github.com/xifandev/KimiCodeBar/issues")!
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 18) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.18))
+                        .frame(width: 54, height: 54)
+
+                    Image("github-icon")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 28, height: 28)
+                        .foregroundStyle(.white)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text("社区开源版")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(.white)
+
+                        Text("Open Source")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.white.opacity(0.18))
+                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                    }
+
+                    Text("KimiCodeBar 完全开源，代码公开透明。欢迎 Star、提交 Issue 或参与共建，让这款工具变得更好。")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 12)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 18)
+
+            HStack(spacing: 12) {
+                Button(action: { NSWorkspace.shared.open(repoURL) }) {
+                    HStack(spacing: 6) {
+                        Image("github-icon")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 14, height: 14)
+
+                        Text("查看仓库")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(isHoveredRepo ? Color.kimiBlue : .white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(isHoveredRepo ? Color.white : Color.white.opacity(0.16))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .cursor(.pointingHand)
+                .onHover { isHoveredRepo = $0 }
+
+                Button(action: { NSWorkspace.shared.open(issuesURL) }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.bubble")
+                            .font(.system(size: 13, weight: .semibold))
+
+                        Text("提交反馈")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(isHoveredIssue ? Color.white.opacity(0.24) : Color.white.opacity(0.14))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .cursor(.pointingHand)
+                .onHover { isHoveredIssue = $0 }
+
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.18, green: 0.38, blue: 0.82),
+                            Color(red: 0.35, green: 0.22, blue: 0.72)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.kimiBlue.opacity(0.22), radius: 18, x: 0, y: 8)
+    }
+}
+
+// MARK: - 特性亮点卡片
+
+struct FeatureHighlightCard: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let description: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(iconColor.opacity(0.12))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(iconColor)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.kimiTextPrimary)
+
+                Text(description)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.kimiTextSecondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color.kimiCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
@@ -2770,6 +2966,7 @@ final class KimiCodeBarModel: ObservableObject {
         Task { await loadKimiVersion() }
         startQuotaTimer()
         startUpdateTimer()
+        KimiArchiveManager.shared.restartTimer()
     }
 
     func startQuotaTimer() {
