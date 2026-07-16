@@ -321,7 +321,8 @@ final class KimiOAuthService {
             }
 
             do {
-                let newToken = try Self.tokenFromResponse(data)
+                // 服务端刷新时可能不返回新 refresh_token，此时沿用旧的
+                let newToken = try Self.tokenFromResponse(data, fallbackRefreshToken: token.refreshToken)
                 return .success(newToken)
             } catch {
                 return .failure(.invalidResponse)
@@ -387,10 +388,12 @@ final class KimiOAuthService {
 
     // MARK: 私有解析
 
-    private static func tokenFromResponse(_ data: Data) throws -> KimiOAuthToken {
+    /// 解析 token 响应。登录时响应必含全部字段；刷新时服务端可能省略
+    /// refresh_token，由 fallbackRefreshToken 传入旧值兜底。
+    private static func tokenFromResponse(_ data: Data, fallbackRefreshToken: String? = nil) throws -> KimiOAuthToken {
         struct TokenResponse: Decodable {
             let accessToken: String
-            let refreshToken: String
+            let refreshToken: String?
             let expiresIn: Int
             let scope: String?
             let tokenType: String?
@@ -405,14 +408,15 @@ final class KimiOAuthService {
         }
 
         let resp = try JSONDecoder().decode(TokenResponse.self, from: data)
-        guard !resp.accessToken.isEmpty, !resp.refreshToken.isEmpty, resp.expiresIn > 0 else {
+        let refreshToken = resp.refreshToken ?? fallbackRefreshToken ?? ""
+        guard !resp.accessToken.isEmpty, !refreshToken.isEmpty, resp.expiresIn > 0 else {
             throw KimiOAuthError.invalidResponse
         }
 
         let expiresAt = Int(Date().timeIntervalSince1970) + resp.expiresIn
         return KimiOAuthToken(
             accessToken: resp.accessToken,
-            refreshToken: resp.refreshToken,
+            refreshToken: refreshToken,
             expiresAt: expiresAt,
             scope: resp.scope,
             tokenType: resp.tokenType,
