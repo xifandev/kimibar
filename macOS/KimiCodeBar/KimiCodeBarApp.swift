@@ -710,6 +710,7 @@ struct KimiMenu: View {
                     state: model.kimiServerState,
                     operation: kimiServerOperation,
                     onOpenWeb: {
+                        dismissMenuBarPanel()
                         model.openKimiWeb()
                     },
                     onStart: {
@@ -741,7 +742,10 @@ struct KimiMenu: View {
                 ActionButton(
                     title: "控制台",
                     textIcon: "KIMI",
-                    action: { NSWorkspace.shared.open(consoleURL) }
+                    action: {
+                        dismissMenuBarPanel()
+                        NSWorkspace.shared.open(consoleURL)
+                    }
                 )
 
                 ActionButton(
@@ -894,6 +898,7 @@ struct KimiMenu: View {
                 },
                 onViewUpdate: {
                     showAppUpdateAlert = false
+                    dismissMenuBarPanel()
                     NSWorkspace.shared.open(URL(string: "https://github.com/xifandev/KimiCodeBar/releases/")!)
                     model.pendingAppUpdateVersion = nil
                 }
@@ -957,6 +962,7 @@ struct KimiMenu: View {
 
     private func installKimiCLIUpdate() async {
         // 呼出 Terminal.app 并执行更新命令，让用户在可视化终端里看到进度
+        dismissMenuBarPanel()
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         task.arguments = [
@@ -1655,7 +1661,10 @@ struct CommunityButton: View {
     @State private var isHovered = false
 
     var body: some View {
-        Button(action: { NSWorkspace.shared.open(url) }) {
+        Button(action: {
+            dismissMenuBarPanel()
+            NSWorkspace.shared.open(url)
+        }) {
             HStack(spacing: 6) {
                 Image("github-icon")
                     .renderingMode(.template)
@@ -2290,6 +2299,7 @@ struct UpdateErrorPopoverView: View {
                         URLQueryItem(name: "body", value: body)
                     ]
                     if let url = components.url {
+                        dismissMenuBarPanel()
                         NSWorkspace.shared.open(url)
                     }
                 }) {
@@ -2319,6 +2329,17 @@ struct UpdateErrorPopoverView: View {
     }
 }
 
+// MARK: - 菜单栏面板关闭
+
+/// 关闭 MenuBarExtra 弹出的面板窗口（NSPanel 子类）。
+/// 跳转外部链接、打开其他窗口等「离开面板」的操作前调用，避免面板残留遮挡。
+@MainActor
+func dismissMenuBarPanel() {
+    for candidate in NSApp.windows where candidate is NSPanel {
+        candidate.close()
+    }
+}
+
 // MARK: - 设置窗口
 
 @MainActor
@@ -2330,7 +2351,7 @@ final class SettingsWindowManager {
 
     func show() {
         // 菜单栏面板是高层级的 NSPanel 弹层，会压住设置窗口，打开设置前先关掉它
-        closeMenuBarPanel()
+        dismissMenuBarPanel()
 
         if let window = window {
             window.makeKeyAndOrderFront(nil)
@@ -2361,13 +2382,6 @@ final class SettingsWindowManager {
 
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-    }
-
-    /// 关闭 MenuBarExtra 弹出的面板窗口（NSPanel 子类），设置窗口本身是普通 NSWindow，不受影响。
-    private func closeMenuBarPanel() {
-        for candidate in NSApp.windows where candidate is NSPanel {
-            candidate.close()
-        }
     }
 }
 
