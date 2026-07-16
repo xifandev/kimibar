@@ -2336,13 +2336,13 @@ final class SettingsWindowManager {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
+            contentRect: NSRect(x: 0, y: 0, width: 860, height: 560),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "KimiCode Bar 设置"
-        window.minSize = NSSize(width: 720, height: 480)
+        window.minSize = NSSize(width: 800, height: 520)
         window.collectionBehavior = [.managed, .moveToActiveSpace]
         window.titlebarAppearsTransparent = true
         window.backgroundColor = NSColor(name: nil, dynamicProvider: { appearance in
@@ -2566,7 +2566,7 @@ struct SettingsRootView: View {
 
                 Spacer()
             }
-            .frame(minWidth: 180, idealWidth: 200, maxWidth: 220)
+            .frame(width: 180)
             .background(Color.kimiPanelBackground)
 
             switch selectedPane {
@@ -2742,11 +2742,16 @@ struct SettingsOptionCard: View {
                     Text(title)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.kimiTextPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
 
                     Text(subtitle)
                         .font(.system(size: 11))
                         .foregroundStyle(.kimiTextSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
+                .layoutPriority(0.5)
 
                 Spacer(minLength: 4)
 
