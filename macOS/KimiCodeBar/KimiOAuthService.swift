@@ -22,7 +22,7 @@ enum KimiOAuthConstants {
 // MARK: - OAuth Token
 
 /// 与 Kimi Code CLI 磁盘格式兼容的 token 模型（snake_case）。
-/// 存储位置：~/.kimi-code/credentials/kimi-code.json，与 CLI 互通。
+/// 存储位置：~/Library/Application Support/KimiCodeBar/credentials.json（Bar 专属，与 CLI 隔离）。
 struct KimiOAuthToken: Codable, Equatable {
     var accessToken: String
     var refreshToken: String
@@ -331,13 +331,16 @@ final class KimiOAuthService {
 
     // MARK: Token 持久化
 
-    /// 与 Kimi Code CLI 共享的 token 文件路径
+    /// Bar 专属的 token 存储路径。
+    /// 注意：刻意与 KimiCode CLI 的 ~/.kimi-code/credentials/kimi-code.json 隔离，
+    /// Bar 的授权、刷新、退出登录都只操作本文件，绝不读写 CLI 的凭证，
+    /// 避免因 refresh_token 服务端轮换导致 CLI 凭证失效。
     static func credentialsFileURL() -> URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".kimi-code/credentials/kimi-code.json")
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        return appSupport.appendingPathComponent("KimiCodeBar/credentials.json")
     }
 
-    /// 从磁盘读取 token（CLI 登录后也会写入此文件，实现互通）
+    /// 从磁盘读取 Bar 自己的 token
     static func loadStoredToken() -> KimiOAuthToken? {
         let url = credentialsFileURL()
         guard let data = try? Data(contentsOf: url) else { return nil }

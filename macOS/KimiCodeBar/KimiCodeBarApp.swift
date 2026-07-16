@@ -3061,7 +3061,7 @@ struct BasicSettingsView: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(.kimiTextPrimary)
 
-                // 登录方式（默认授权登录，与 KimiCode CLI 共享凭证）
+                // 登录方式（默认授权登录，凭证独立存储，不影响 KimiCode CLI）
                 SettingsCard(title: "登录方式") {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(spacing: 10) {
@@ -4054,7 +4054,7 @@ final class KimiCodeBarModel: ObservableObject {
     }
 
     /// 根据当前登录方式解析 Bearer 凭证。
-    /// OAuth 模式下每次从磁盘重读（兼容 CLI 侧刷新），过期前自动用 refresh_token 换新。
+    /// OAuth 模式下使用 Bar 专属凭证文件（与 CLI 隔离），过期前自动用 refresh_token 换新。
     private func resolveBearerToken() async -> String? {
         switch loginMethod {
         case .token:
@@ -4069,7 +4069,7 @@ final class KimiCodeBarModel: ObservableObject {
                 return token.accessToken
             }
 
-            // 刷新前再读一次磁盘：CLI 等进程可能刚完成刷新并写入了新凭证
+            // 刷新前再读一次磁盘：防御其他 Bar 实例刚完成刷新并写入了新凭证
             if let latest = KimiOAuthService.loadStoredToken(),
                latest.accessToken != token.accessToken,
                !latest.needsRefresh {
@@ -4084,13 +4084,13 @@ final class KimiCodeBarModel: ObservableObject {
                 oauthToken = newToken
                 return newToken.accessToken
             case .failure(.unauthorized):
-                // 若磁盘上已是另一份凭证（其他进程刷新成功），直接沿用而不是误删
+                // 若磁盘上已是另一份凭证（其他实例刷新成功），直接沿用而不是误删
                 if let latest = KimiOAuthService.loadStoredToken(),
                    latest.accessToken != token.accessToken {
                     oauthToken = latest
                     return latest.accessToken
                 }
-                // 授权已被吊销，清除本地凭证，等待用户重新授权
+                // 授权已被吊销，清除本地凭证（仅 Bar 专属文件），等待用户重新授权
                 oauthToken = nil
                 KimiOAuthService.clearToken()
                 return nil
