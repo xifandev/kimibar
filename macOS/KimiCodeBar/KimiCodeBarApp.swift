@@ -3197,10 +3197,7 @@ struct BasicSettingsView: View {
                 }
 
                 // 自动刷新
-                SettingsCard(
-                    title: languageManager.tr("自动刷新"),
-                    footerText: languageManager.tr("设置越短，数据越及时，但会增加网络和系统负担。")
-                ) {
+                SettingsCard(title: languageManager.tr("自动刷新")) {
                     VStack(alignment: .leading, spacing: 0) {
                         SettingsCardRow(title: languageManager.tr("额度刷新间隔")) {
                             HStack(spacing: 6) {

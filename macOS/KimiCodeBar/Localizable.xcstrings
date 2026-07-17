@@ -1793,17 +1793,6 @@
         }
       }
     },
-    "设置越短，数据越及时，但会增加网络和系统负担。" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shorter intervals keep data fresher, but increase network and system load."
-          }
-        }
-      }
-    },
     "语言" : {
       "extractionState" : "stale",
       "localizations" : {
