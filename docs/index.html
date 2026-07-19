@@ -553,16 +553,21 @@
         justify-content: center;
       }
 
+      #showcase .split {
+        grid-template-columns: 1fr 1.8fr;
+      }
+
       .duo {
-        display: flex;
-        flex-direction: column;
-        gap: 28px;
-        align-items: center;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        justify-items: center;
+        width: 100%;
       }
 
       .duo figure {
         width: 100%;
-        max-width: 360px;
+        max-width: 270px;
         border-radius: 24px;
         overflow: hidden;
         border: 1px solid var(--border-strong);
@@ -586,162 +591,163 @@
       }
 
       .duo .kp {
-        max-width: 360px;
-        padding: 12px;
-        gap: 10px;
-        font-size: 12px;
+        max-width: 100%;
+        padding: 9px;
+        gap: 8px;
+        font-size: 9px;
+        border-radius: 16px;
       }
 
       .duo .kp-header {
-        gap: 10px;
+        gap: 8px;
       }
 
       .duo .kp-logo {
-        width: 38px;
-        height: 26px;
+        width: 29px;
+        height: 20px;
       }
 
       .duo .kp-logo-body {
-        border-radius: 7px;
+        border-radius: 5px;
       }
 
       .duo .kp-eyes i {
-        top: 8px;
-        width: 3.3px;
-        height: 9px;
+        top: 6px;
+        width: 2.5px;
+        height: 7px;
       }
 
       .duo .kp-eyes i:first-child {
-        left: 14px;
+        left: 11px;
       }
 
       .duo .kp-eyes i:last-child {
-        left: 20px;
+        left: 15px;
       }
 
       .duo .kp-title {
-        font-size: 15px;
+        font-size: 11px;
       }
 
       .duo .kp-community {
-        padding: 5px 8px;
-        font-size: 11px;
-        gap: 4px;
+        padding: 4px 6px;
+        font-size: 8px;
+        gap: 3px;
       }
 
       .duo .kp-cards {
-        gap: 10px;
+        gap: 8px;
       }
 
       .duo .kp-card {
-        padding: 10px;
-        border-radius: 12px;
+        padding: 8px;
+        border-radius: 9px;
       }
 
       .duo .kp-quota-row {
-        gap: 10px;
+        gap: 8px;
       }
 
       .duo .kp-quota {
-        gap: 6px;
+        gap: 5px;
       }
 
       .duo .kp-quota-title {
-        font-size: 11px;
-      }
-
-      .duo .kp-num {
-        font-size: 26px;
-      }
-
-      .duo .kp-value {
-        height: 30px;
-      }
-
-      .duo .kp-bar {
-        height: 3px;
-      }
-
-      .duo .kp-reset {
-        font-size: 10px;
-      }
-
-      .duo .kp-wallet {
-        gap: 6px;
-        padding: 10px;
-      }
-
-      .duo .kp-balance-row {
-        height: 24px;
-      }
-
-      .duo .kp-balance {
-        font-size: 18px;
-      }
-
-      .duo .kp-spend {
-        font-size: 10px;
-      }
-
-      .duo .kp-server {
-        gap: 8px;
-        padding: 10px;
-      }
-
-      .duo .kp-server-title {
-        font-size: 12px;
-      }
-
-      .duo .kp-version {
-        font-size: 11px;
-      }
-
-      .duo .kp-server-btns {
-        gap: 6px;
-      }
-
-      .duo .kp-btn {
-        padding: 7px 0;
-        border-radius: 8px;
-        font-size: 11px;
-      }
-
-      .duo .kp-actions {
-        gap: 6px;
-      }
-
-      .duo .kp-act {
-        padding: 9px 0;
-        gap: 4px;
-        font-size: 10px;
-      }
-
-      .duo .kp-act svg {
-        width: 14px;
-        height: 14px;
-      }
-
-      .duo .kp-act .kp-kimi {
-        font-size: 12px;
-        height: 15px;
-      }
-
-      .duo .kp-cli {
-        padding: 9px 10px;
-        font-size: 11px;
-      }
-
-      .duo .kp-badge {
-        font-size: 9px;
-      }
-
-      .duo .kp-badge-new {
         font-size: 8px;
       }
 
+      .duo .kp-num {
+        font-size: 20px;
+      }
+
+      .duo .kp-value {
+        height: 23px;
+      }
+
+      .duo .kp-bar {
+        height: 2px;
+      }
+
+      .duo .kp-reset {
+        font-size: 8px;
+      }
+
+      .duo .kp-wallet {
+        gap: 5px;
+        padding: 8px;
+      }
+
+      .duo .kp-balance-row {
+        height: 18px;
+      }
+
+      .duo .kp-balance {
+        font-size: 14px;
+      }
+
+      .duo .kp-spend {
+        font-size: 8px;
+      }
+
+      .duo .kp-server {
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .duo .kp-server-title {
+        font-size: 9px;
+      }
+
+      .duo .kp-version {
+        font-size: 8px;
+      }
+
+      .duo .kp-server-btns {
+        gap: 5px;
+      }
+
+      .duo .kp-btn {
+        padding: 5px 0;
+        border-radius: 6px;
+        font-size: 8px;
+      }
+
+      .duo .kp-actions {
+        gap: 5px;
+      }
+
+      .duo .kp-act {
+        padding: 7px 0;
+        gap: 3px;
+        font-size: 8px;
+      }
+
+      .duo .kp-act svg {
+        width: 11px;
+        height: 11px;
+      }
+
+      .duo .kp-act .kp-kimi {
+        font-size: 9px;
+        height: 11px;
+      }
+
+      .duo .kp-cli {
+        padding: 7px 8px;
+        font-size: 8px;
+      }
+
+      .duo .kp-badge {
+        font-size: 7px;
+      }
+
+      .duo .kp-badge-new {
+        font-size: 6px;
+      }
+
       @media (max-width: 640px) {
-        .duo .kp {
-          max-width: 340px;
+        .duo {
+          grid-template-columns: 1fr;
         }
       }
 
@@ -1848,7 +1854,8 @@
         .privacy {
           grid-template-columns: 1fr;
         }
-        .split {
+        .split,
+        #showcase .split {
           grid-template-columns: 1fr;
           gap: 40px;
         }
@@ -1875,7 +1882,7 @@
           grid-template-columns: 1fr;
         }
         .duo {
-          max-width: 100%;
+          grid-template-columns: 1fr;
         }
         .platforms {
           grid-template-columns: 1fr;
@@ -2046,44 +2053,6 @@
       </div>
     </section>
 
-    <!-- 双主题预览 -->
-    <section id="showcase">
-      <div class="container">
-        <div class="split">
-          <div class="reveal">
-            <span class="sec-tag">Showcase</span>
-            <h2>明暗双主题，<br />跟随系统</h2>
-            <p class="desc">面板外观自动适配 macOS 深浅色模式，融入桌面，毫不突兀。</p>
-            <ul class="check-list">
-              <li>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                <span><b>跟随系统外观</b>，自动切换深色 / 浅色</span>
-              </li>
-              <li>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                <span><b>原生半透明面板</b>，与 macOS 菜单栏视觉统一</span>
-              </li>
-              <li>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                <span><b>无需手动设置</b>，随系统主题实时变化</span>
-              </li>
-            </ul>
-          </div>
-          <div class="showcase-visual reveal">
-            <div class="duo">
-              <figure>
-                <div class="kp-mount" data-theme="dark"></div>
-                <noscript><img src="assets/panel-01.png" alt="KimiCodeBar 暗夜模式面板" loading="lazy" /></noscript>
-              </figure>
-              <figure>
-                <div class="kp-mount" data-theme="light"></div>
-                <noscript><img src="assets/panel-02.png" alt="KimiCodeBar 浅色模式面板" loading="lazy" /></noscript>
-              </figure>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <!-- Kimi 一键登录 -->
     <section id="login">
@@ -2234,6 +2203,45 @@
             </div>
             <div class="dialog">
               <img src="assets/newtip.png" alt="KimiCode 新版本更新对话框" loading="lazy" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 双主题预览 -->
+    <section id="showcase">
+      <div class="container">
+        <div class="split">
+          <div class="reveal">
+            <span class="sec-tag">Showcase</span>
+            <h2>明暗双主题，<br />跟随系统</h2>
+            <p class="desc">面板外观自动适配 macOS 深浅色模式，融入桌面，毫不突兀。</p>
+            <ul class="check-list">
+              <li>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                <span><b>跟随系统外观</b>，自动切换深色 / 浅色</span>
+              </li>
+              <li>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                <span><b>原生半透明面板</b>，与 macOS 菜单栏视觉统一</span>
+              </li>
+              <li>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                <span><b>无需手动设置</b>，随系统主题实时变化</span>
+              </li>
+            </ul>
+          </div>
+          <div class="showcase-visual reveal">
+            <div class="duo">
+              <figure>
+                <div class="kp-mount" data-theme="dark"></div>
+                <noscript><img src="assets/panel-01.png" alt="KimiCodeBar 暗夜模式面板" loading="lazy" /></noscript>
+              </figure>
+              <figure>
+                <div class="kp-mount" data-theme="light"></div>
+                <noscript><img src="assets/panel-02.png" alt="KimiCodeBar 浅色模式面板" loading="lazy" /></noscript>
+              </figure>
             </div>
           </div>
         </div>
