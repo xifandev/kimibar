@@ -544,6 +544,47 @@
         gap: 16px;
       }
 
+      /* ============ 科幻感渐变分割条 ============ */
+      .sec-divider {
+        position: relative;
+        max-width: 880px;
+        height: 24px;
+        margin: 36px auto 96px;
+      }
+      .sec-divider-line {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        transform: translateY(-50%);
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(91, 147, 255, 0.12) 18%,
+          rgba(91, 147, 255, 0.5) 50%,
+          rgba(91, 147, 255, 0.12) 82%,
+          transparent 100%
+        );
+      }
+      .sec-divider-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 160px;
+        height: 2px;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--blue-2) 50%,
+          transparent
+        );
+        filter: blur(3px);
+        opacity: 0.85;
+        border-radius: 2px;
+      }
+
       .card {
         background: var(--card);
         border: 1px solid var(--border);
@@ -2073,46 +2114,9 @@
           <h2>为 Kimi Code 而生</h2>
           <p>轻量驻留菜单栏，不占 Dock、不打断心流，需要时一眼可见。</p>
         </div>
-        <div class="features">
-          <div class="card reveal card-highlight">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                <polyline points="10 17 15 12 10 7" />
-                <line x1="15" y1="12" x2="3" y2="12" />
-              </svg>
-            </div>
-            <h3>Kimi 一键登录 ✨</h3>
-            <p>浏览器授权即登录，API Key 自由切换。</p>
-          </div>
-          <div class="card reveal">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="20" x2="18" y2="10" />
-                <line x1="12" y1="20" x2="12" y2="4" />
-                <line x1="6" y1="20" x2="6" y2="14" />
-              </svg>
-            </div>
-            <h3>用量一目了然</h3>
-            <p>限额、进度、重置时间一屏掌握。</p>
-          </div>
-          <div class="card reveal">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </div>
-            <h3>更新自动探测</h3>
-            <p>新版本即时通知，一键直达更新。</p>
-          </div>
-          <div class="card reveal">
-            <div class="icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-            </div>
-            <h3>隐私安全</h3>
-            <p>数据本地、官方直连、开源可审计。</p>
-          </div>
+        <div class="sec-divider reveal" aria-hidden="true">
+          <span class="sec-divider-line"></span>
+          <span class="sec-divider-glow"></span>
         </div>
       </div>
     </section>
