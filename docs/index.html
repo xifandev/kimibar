@@ -548,8 +548,19 @@
       .sec-divider {
         position: relative;
         max-width: 880px;
-        height: 24px;
-        margin: 36px auto 96px;
+        height: 16px;
+        margin: 16px auto 24px;
+      }
+      /* features 节专属：标题与分割条紧凑衔接，避免大留白赶走用户 */
+      #features .sec-head {
+        margin-bottom: 0;
+      }
+      /* features 与 login 之间不留大空隙，保留过渡呼吸感即可 */
+      #features {
+        padding-bottom: 32px;
+      }
+      #login {
+        padding-top: 32px;
       }
       .sec-divider-line {
         position: absolute;
