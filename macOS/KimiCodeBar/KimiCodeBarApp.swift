@@ -871,6 +871,10 @@ struct KimiMenu: View {
             if isVisible {
                 isKimiServerRestartHintDismissed = false
                 Task { await model.refreshKimiServerState() }
+                // 面板打开立即刷新一次额度，但避免与正在进行的请求并发
+                if !model.isLoading {
+                    model.refresh(showsLoading: false)
+                }
             }
         }
         .popover(isPresented: $showUpdateAlert, arrowEdge: .trailing) {
@@ -3292,7 +3296,7 @@ struct BasicSettingsView: View {
                 focusedField = nil
             }
 
-            model.refresh()
+            model.refresh(showsLoading: false)
         }
         .onDisappear {
             commitIntervals()
@@ -3324,7 +3328,7 @@ struct BasicSettingsView: View {
         model.key = trimmed
         isEditingKey = false
         commitIntervals()
-        model.refresh()
+        model.refresh(showsLoading: false)
     }
 
     private func maskedKey(_ key: String) -> String {
@@ -4074,7 +4078,7 @@ final class KimiCodeBarModel: ObservableObject {
 
     @AppStorage("kimiApiKey") var key = ""
     @AppStorage("loginMethod") var loginMethod: LoginMethod = .oauth {
-        didSet { refresh() }
+        didSet { refresh(showsLoading: false) }
     }
     @AppStorage("quotaRefreshInterval") var quotaRefreshInterval: Double = 5
     @AppStorage("updateCheckInterval") var updateCheckInterval: Double = 30
@@ -4136,7 +4140,7 @@ final class KimiCodeBarModel: ObservableObject {
 
     init() {
         oauthToken = KimiOAuthService.loadStoredToken()
-        refresh()
+        refresh(showsLoading: false)
         Task { await loadKimiVersion() }
         startQuotaTimer()
         startUpdateTimer()
@@ -4147,7 +4151,7 @@ final class KimiCodeBarModel: ObservableObject {
         timer?.invalidate()
         let interval = max(1.0, quotaRefreshInterval) * 60
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            Task { @MainActor in self.refresh() }
+            Task { @MainActor in self.refresh(showsLoading: false) }
         }
         timer?.tolerance = interval * 0.1
     }
@@ -4166,15 +4170,23 @@ final class KimiCodeBarModel: ObservableObject {
         startUpdateTimer()
     }
 
-    func refresh() {
-        isLoading = true
+    /// 拉取额度用量。
+    /// - Parameter showsLoading: 是否把 isLoading 置 true 触发 UI loading 态。
+    ///   仅手动点「刷新」按钮时传 true；后台场景（启动、定时器、面板打开、切登录方式、
+    ///   设置窗口 onAppear、saveKey）一律传 false，避免界面无谓闪烁。
+    func refresh(showsLoading: Bool = true) {
+        if showsLoading {
+            isLoading = true
+        }
         errorMessage = nil
         let startTime = Date()
 
         Task {
             guard let bearerToken = await resolveBearerToken() else {
                 await MainActor.run {
-                    self.isLoading = false
+                    if showsLoading {
+                        self.isLoading = false
+                    }
                     self.quota = nil
                     self.text = LanguageManager.tr("未登录")
                 }
@@ -4190,7 +4202,9 @@ final class KimiCodeBarModel: ObservableObject {
             }
 
             await MainActor.run {
-                self.isLoading = false
+                if showsLoading {
+                    self.isLoading = false
+                }
                 switch result {
                 case .success(let quota):
                     self.quota = quota
@@ -4293,7 +4307,7 @@ final class KimiCodeBarModel: ObservableObject {
             case .success(let token):
                 KimiOAuthService.saveToken(token)
                 oauthToken = token
-                refresh()
+                refresh(showsLoading: false)
             case .failure(let error) where error != .cancelled:
                 oauthLoginError = oauthErrorDescription(error)
             case .failure:
