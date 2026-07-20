@@ -4434,29 +4434,39 @@ final class KimiCodeBarModel: ObservableObject {
     }
 
     private func detectKimiServerState() async -> KimiServerState {
-        let psResult = await runKimiCommand(arguments: ["server", "ps"])
+        // Kimi CLI 0.28 起废弃 kimi server 命令树，改用 kimi web ps --json
+        // server 未运行时返回空 servers 数组或退出码非 0，均走 stopped 分支
+        let psResult = await runKimiCommand(arguments: ["web", "ps", "--json"])
 
-        if psResult.exitCode == 0 {
-            let lines = psResult.output
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty && !$0.hasPrefix("ID") }
+        struct PsResponse: Decodable {
+            struct ServerInfo: Decodable {
+                struct ConnectionInfo: Decodable {}
+                let connections: [ConnectionInfo]
+            }
+            let servers: [ServerInfo]
+        }
+
+        if psResult.exitCode == 0,
+           !psResult.output.isEmpty,
+           let data = psResult.output.data(using: .utf8),
+           let resp = try? JSONDecoder().decode(PsResponse.self, from: data),
+           !resp.servers.isEmpty {
+            let connections = resp.servers.reduce(0) { $0 + $1.connections.count }
             let version = await detectKimiServerVersion(port: 58627)
             return KimiServerState(
                 status: .running,
                 version: version,
                 port: 58627,
-                connections: lines.count
-            )
-        } else {
-            let errorMsg = psResult.output.isEmpty ? LanguageManager.tr("服务未运行") : psResult.output
-            return KimiServerState(
-                status: .stopped,
-                version: LanguageManager.tr("未检测到"),
-                port: 58627,
-                connections: 0
+                connections: connections
             )
         }
+
+        return KimiServerState(
+            status: .stopped,
+            version: LanguageManager.tr("未检测到"),
+            port: 58627,
+            connections: 0
+        )
     }
 
     private func detectKimiServerVersion(port: Int = 58627) async -> String {
