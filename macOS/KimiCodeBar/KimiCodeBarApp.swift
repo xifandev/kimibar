@@ -4397,7 +4397,7 @@ final class KimiCodeBarModel: ObservableObject {
             """
             tell application "Terminal"
                 activate
-                do script "kimi web --no-open --dangerous-bypass-auth"
+                do script "kimi web"
             end tell
             """
         ]
