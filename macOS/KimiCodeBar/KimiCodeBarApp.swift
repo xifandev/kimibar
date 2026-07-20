@@ -868,9 +868,15 @@ struct KimiMenu: View {
 
                 Spacer()
 
-                Text(languageManager.tr("检查更新…"))
+                let updateAvailable = model.pendingAppUpdateVersion != nil
+                let updateText = updateAvailable
+                    ? languageManager.tr("下载新版本")
+                    : languageManager.tr("检查更新…")
+                let updateColor: Color = updateAvailable ? .orange : .kimiBlue
+
+                Text(updateText)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(isHoveredCheckUpdate ? .kimiBlue.opacity(0.8) : .kimiBlue)
+                    .foregroundStyle(isHoveredCheckUpdate ? updateColor.opacity(0.8) : updateColor)
                     .contentShape(Rectangle())
                     .cursor(.pointingHand)
                     .onHover { isHoveredCheckUpdate = $0 }

@@ -35,7 +35,8 @@ fastlane/test_output
 *.app.zip
 
 # Sparkle test artifacts (binaries, downloaded tools, and generated appcast)
-macOS/SparkleTest/*.app
+macOS/SparkleTest/Old/
+macOS/SparkleTest/New/
 macOS/SparkleTest/*.zip
 macOS/SparkleTest/Tools/
 macOS/SparkleTest/appcast.xml
