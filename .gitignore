@@ -34,6 +34,12 @@ fastlane/test_output
 *.app.dSYM.zip
 *.app.zip
 
+# Sparkle test artifacts (binaries, downloaded tools, and generated appcast)
+macOS/SparkleTest/*.app
+macOS/SparkleTest/*.zip
+macOS/SparkleTest/Tools/
+macOS/SparkleTest/appcast.xml
+
 # Windows
 Thumbs.db
 desktop.ini

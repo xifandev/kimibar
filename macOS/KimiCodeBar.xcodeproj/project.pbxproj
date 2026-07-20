@@ -16,6 +16,8 @@
 		71B3F9A2C4D84E5B0F1A6C8D /* KimiOAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4D2C7B1A5F48E3B6D09A21 /* KimiOAuthService.swift */; };
 		C3C950D6204C47819C0011560E684C68 /* ArchiveSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D072D603E59C42A791F3136E0477FE56 /* ArchiveSettingsView.swift */; };
 		FFAC0CE5E70E4F17AAD3B902 /* KimiCodeBarQuotaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F47923DD8C405BB3237AE1 /* KimiCodeBarQuotaService.swift */; };
+		FF4EC20D71184E45B29FFDB3C8BC6524 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 35A4DA7EE8214A199549CDB1B5E1C570 /* Sparkle */; };
+		B9C4D489692D416CA7616C08D907965F /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 528728E8E55940FC93765F944AFE050F /* SparkleUpdater.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +33,7 @@
 		9E4D2C7B1A5F48E3B6D09A21 /* KimiOAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiOAuthService.swift; sourceTree = "<group>"; };
 		D44CECE74D174CC298CE6FE7 /* KimiCodeBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KimiCodeBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EA0ACF1E9B564B769FE86518 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		528728E8E55940FC93765F944AFE050F /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FF4EC20D71184E45B29FFDB3C8BC6524 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -64,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				2EF9AB1130A844A89CE0075C /* KimiCodeBarApp.swift */,
+				528728E8E55940FC93765F944AFE050F /* SparkleUpdater.swift */,
 				c68dac1893a64de08b00b18830c9deba /* KimiWebLaunchAgentManager.swift */,
 				02F47923DD8C405BB3237AE1 /* KimiCodeBarQuotaService.swift */,
 				9E4D2C7B1A5F48E3B6D09A21 /* KimiOAuthService.swift */,
@@ -123,6 +128,9 @@
 				zhCN,
 			);
 			mainGroup = 939F3BDDAEAC498B9399A2EA;
+			packageReferences = (
+				CFBD431D99764221B5DC5A75AE37FE46 /* Sparkle */,
+			);
 			productRefGroup = 6456A76DE5E141ED86925025 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -149,6 +157,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B9C4D489692D416CA7616C08D907965F /* SparkleUpdater.swift in Sources */,
 				0C489D06D649421680AD66D7 /* KimiCodeBarApp.swift in Sources */,
 				4f9dbf90dffc49ad85242801801d170f /* KimiWebLaunchAgentManager.swift in Sources */,
 				FFAC0CE5E70E4F17AAD3B902 /* KimiCodeBarQuotaService.swift in Sources */,
@@ -160,6 +169,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CFBD431D99764221B5DC5A75AE37FE46 /* Sparkle */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		35A4DA7EE8214A199549CDB1B5E1C570 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CFBD431D99764221B5DC5A75AE37FE46 /* Sparkle */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		9597893A2DD1474881E9922A /* Release */ = {
