@@ -140,7 +140,7 @@
       }
 
       .nav-kimi-logo {
-        height: 16px;
+        height: 20px;
         width: auto;
         display: block;
         /* logo 原图可能是黑底白字或白底黑字，在深色按钮背景上不可见。
@@ -402,7 +402,6 @@
          只保留 .hero-glow（底部柔光）和 .hero-shot::before（顶部反光）两个
          装饰层。 */
 
-
       /* 顶部状态条 —— 模拟 macOS 菜单栏 */
       .hero-menubar {
         position: relative;
@@ -468,8 +467,10 @@
 
       .hero-widget {
         display: flex;
-        gap: 8px;
-        padding: 4px 8px;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0;
+        padding: 3px 7px;
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.1);
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
@@ -477,22 +478,30 @@
 
       .hero-widget-row {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        line-height: 1.2;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: flex-end;
+        gap: 3px;
+        line-height: 1.15;
       }
 
       .hero-widget-k {
-        font-size: 7px;
-        font-weight: 700;
+        font-size: 8px;
+        font-weight: 500;
         color: rgba(255, 255, 255, 0.55);
         letter-spacing: 0.3px;
+        min-width: 16px;
+        text-align: left;
+        font-variant-numeric: tabular-nums;
       }
 
       .hero-widget-v {
         font-size: 10px;
         font-weight: 700;
         color: #fff;
+        min-width: 26px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
       }
 
       .hero-clock {
@@ -2001,7 +2010,7 @@
           font-size: 13px;
         }
         .nav-kimi-logo {
-          height: 14px;
+          height: 18px;
         }
         .hero h1 {
           font-size: 30px;
@@ -2046,6 +2055,13 @@
         }
         .hero-clock {
           display: none;
+        }
+        .nav-kimi-link {
+          display: none;
+        }
+        .demo-cursor,
+        .demo-ripple {
+          left: 86%;
         }
         .hero-panel {
           max-width: 320px;
@@ -2125,18 +2141,19 @@
       }
 
       /* ============ Hero 循环演示 ============
-         时序（10s 一轮）—— 面板优先，避免页面打开空白：
-         0–5%    面板已弹出（页面打开即显示，避免空白）
-         5–18%   镜头放大菜单栏（聚焦 7D/5H 标签，虚线渐显）
-         18–30%  定格放大
-         30–45%  镜头拉回（虚线渐隐）
-         45–58%  面板保持显示
-         58–62%  面板收回
-         62–67%  鼠标淡入到 widget
-         67%     点击瞬间（波纹扩散 + widget 蓝光高亮）
-         67–72%  面板重新弹出（带回弹）
-         72–95%  面板停留约 2.3s
-         95–100% 鼠标淡出，面板保持 → 无缝循环到 0%
+         时序（5s 一轮）—— 先点击打开面板，再聚焦菜单栏：
+         0–5%    页面刚打开：面板隐藏，鼠标隐藏
+         5–8%    鼠标淡入到 widget
+         8%      点击瞬间（波纹扩散 + widget 蓝光高亮）
+         8–10%   鼠标短暂停留后隐藏（避免遮挡面板）
+         10–15%  面板弹出（带回弹）
+         15–35%  面板停留
+         35–48%  镜头放大菜单栏（聚焦 7D/5H 标签，虚线渐显）
+         48–58%  定格放大
+         58–73%  镜头拉回（虚线渐隐）
+         73–88%  面板保持显示
+         88–95%  面板收回
+         95–100% 鼠标淡出，准备下一轮
       */
       .hero-shot.demo-loop {
         /* 盒子本身不动：保留原 overflow:hidden 切掉放大后溢出到盒子外的部分，
@@ -2154,23 +2171,24 @@
         --demo-zoom: 1.3;
         z-index: 5;
         transform-origin: 50% 0%;
-        animation: demo-menubar-zoom 10s ease-in-out infinite;
+        animation: demo-menubar-zoom 5s ease-in-out infinite;
+        animation-delay: 0.5s;
         will-change: transform;
       }
 
       @keyframes demo-menubar-zoom {
-        /* 0–5% 面板已弹出，菜单栏原尺寸 */
+        /* 0–35% 先点击打开面板，菜单栏保持原尺寸 */
         0%,
-        5% {
+        35% {
           transform: scale(1);
         }
-        /* 5–18% 镜头放大到 1.3x */
-        18%,
-        30% {
+        /* 35–48% 镜头放大到 1.3x（面板已打开） */
+        48%,
+        58% {
           transform: scale(var(--demo-zoom));
         }
-        /* 30–45% 镜头拉回原尺寸 */
-        45%,
+        /* 58–73% 镜头拉回原尺寸 */
+        73%,
         100% {
           transform: scale(1);
         }
@@ -2193,46 +2211,52 @@
         }
       }
 
-      /* 演示期间：面板默认显示（0% 起就弹出，避免页面打开空白），
-         58–62% 收回，67–72% 鼠标点击后重新弹出 */
+      /* 演示期间：页面打开时面板隐藏，等 8% 点击后弹出；
+         88–95% 收回，为下一轮点击做准备。 */
       .hero-shot.demo-loop .hero-panel {
-        opacity: 1;
+        opacity: 0;
         transform-origin: 50% 0%;
-        animation: demo-panel-show 10s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        animation: demo-panel-show 5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        animation-delay: 0.5s;
         will-change: transform, opacity;
       }
 
       @keyframes demo-panel-show {
-        /* 0–58% 面板保持显示（初始弹出状态） */
+        /* 0–5% 页面刚打开，面板隐藏 */
         0%,
-        58% {
-          opacity: 1;
-          transform: scale(1) translateY(0);
-        }
-        /* 58–62% 面板收回 */
-        62% {
+        5% {
           opacity: 0;
           transform: scale(0.94) translateY(-10px);
         }
-        /* 62–67% 保持隐藏，等鼠标点击 */
-        67% {
+        /* 5–8% 鼠标淡入，面板仍隐藏 */
+        8% {
           opacity: 0;
           transform: scale(0.94) translateY(-10px);
         }
-        /* 67–72% 面板重新弹出（带回弹） */
-        70% {
+        /* 8–15% 点击后面板弹出（带回弹） */
+        13% {
           opacity: 1;
           transform: scale(1.02) translateY(0);
         }
-        72% {
+        15% {
           opacity: 1;
           transform: scale(0.99) translateY(0);
         }
-        /* 72–100% 面板保持显示，无缝循环到 0% */
-        75%,
-        100% {
+        /* 15–88% 面板保持显示 */
+        15%,
+        88% {
           opacity: 1;
           transform: scale(1) translateY(0);
+        }
+        /* 88–95% 面板收回 */
+        95% {
+          opacity: 0;
+          transform: scale(0.94) translateY(-10px);
+        }
+        /* 95–100% 保持隐藏，准备下一轮 */
+        100% {
+          opacity: 0;
+          transform: scale(0.94) translateY(-10px);
         }
       }
 
@@ -2250,7 +2274,8 @@
         opacity: 0;
         z-index: 20;
         filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55));
-        animation: demo-cursor-move 10s cubic-bezier(0.45, 0.05, 0.2, 1) infinite;
+        animation: demo-cursor-move 5s cubic-bezier(0.45, 0.05, 0.2, 1) infinite;
+        animation-delay: 0.5s;
         will-change: opacity;
       }
 
@@ -2261,18 +2286,18 @@
       }
 
       @keyframes demo-cursor-move {
-        /* 0–62% 鼠标隐藏（面板已弹出 + 放大阶段不需要鼠标） */
+        /* 0–4% 页面刚打开，鼠标隐藏 */
         0%,
-        62% {
+        4% {
           opacity: 0;
         }
-        /* 62–67% 鼠标淡入显示 */
-        63%,
-        95% {
+        /* 5–10% 鼠标淡入并点击 widget */
+        5%,
+        10% {
           opacity: 1;
         }
-        /* 95–100% 鼠标淡出，无缝循环 */
-        96%,
+        /* 10% 之后隐藏鼠标：面板弹出 + 菜单栏放大期间不遮挡内容 */
+        11%,
         100% {
           opacity: 0;
         }
@@ -2294,27 +2319,28 @@
         opacity: 0;
         z-index: 19;
         transform: scale(0);
-        animation: demo-ripple 10s ease-out infinite;
+        animation: demo-ripple 5s ease-out infinite;
+        animation-delay: 0.5s;
         will-change: transform, opacity;
       }
 
       @keyframes demo-ripple {
-        /* 0–66% 波纹不显示 */
+        /* 0–7% 波纹不显示 */
         0%,
-        66% {
+        7% {
           opacity: 0;
           transform: scale(0.2);
         }
-        /* 67% 点击瞬间：波纹扩散 */
-        67% {
+        /* 8% 点击瞬间：波纹扩散 */
+        8% {
           opacity: 1;
           transform: scale(0.45);
         }
-        74% {
+        15% {
           opacity: 0.35;
           transform: scale(1.2);
         }
-        80%,
+        22%,
         100% {
           opacity: 0;
           transform: scale(1.7);
@@ -2327,7 +2353,8 @@
       .hero-shot.demo-loop .hero-widget {
         position: relative;
         z-index: 6;
-        animation: demo-widget-glow 10s ease-in-out infinite;
+        animation: demo-widget-glow 5s ease-in-out infinite;
+        animation-delay: 0.5s;
         will-change: box-shadow, background;
       }
 
@@ -2341,47 +2368,55 @@
         border-radius: 10px;
         pointer-events: none;
         opacity: 0;
-        animation: demo-widget-dashed 10s ease-in-out infinite;
+        animation: demo-widget-dashed 5s ease-in-out infinite;
+        animation-delay: 0.5s;
         will-change: opacity;
       }
 
       @keyframes demo-widget-dashed {
         /* 虚线跟着镜头放大显示，缩回时隐藏 */
         0%,
-        5% {
+        35% {
           opacity: 0;
         }
-        /* 5–18% 镜头放大时虚线渐显 */
-        18% {
+        /* 35–48% 镜头放大时虚线渐显 */
+        48% {
           opacity: 1;
         }
-        /* 18–30% 定格放大时保持显示 */
-        30% {
+        /* 48–58% 定格放大时保持显示 */
+        58% {
           opacity: 1;
         }
-        /* 30–45% 镜头拉回时虚线渐隐 */
-        45%,
+        /* 58–73% 镜头拉回时虚线渐隐 */
+        73%,
         100% {
           opacity: 0;
         }
       }
 
       @keyframes demo-widget-glow {
-        /* 0–66% 默认状态（无高亮） */
+        /* 0–7% 默认状态（无高亮） */
         0%,
-        66% {
-          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 0 rgba(45, 117, 246, 0);
+        7% {
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+            0 0 0 0 rgba(45, 117, 246, 0);
           background: rgba(255, 255, 255, 0.1);
         }
-        /* 67% 被点击瞬间：蓝光高亮 */
-        67% {
-          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 3px rgba(91, 147, 255, 0.7), 0 0 22px rgba(91, 147, 255, 0.55);
+        /* 8% 被点击瞬间：蓝光高亮 */
+        8% {
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+            0 0 0 3px rgba(91, 147, 255, 0.7),
+            0 0 22px rgba(91, 147, 255, 0.55);
           background: rgba(255, 255, 255, 0.24);
         }
-        /* 75–100% 恢复默认 */
-        75%,
+        /* 18–100% 恢复默认 */
+        18%,
         100% {
-          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 0 rgba(45, 117, 246, 0);
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+            0 0 0 0 rgba(45, 117, 246, 0);
           background: rgba(255, 255, 255, 0.1);
         }
       }
@@ -2434,13 +2469,8 @@
           KimiCodeBar
         </a>
         <div class="nav-links">
-          <a class="btn btn-outline-blue btn-sm" href="https://kimi.com/" target="_blank" rel="noopener">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            <img src="assets/kimi-logo.png" alt="KimiCode" class="nav-kimi-logo" />
+          <a class="btn btn-outline-blue btn-sm nav-kimi-link" href="https://kimi.com/" target="_blank" rel="noopener" title="Kimi Code">
+            <img src="assets/kimi-logo.png" alt="Kimi Code" class="nav-kimi-logo" />
           </a>
           <a class="btn btn-outline-blue btn-sm" href="https://github.com/xifandev/KimiCodeBar" target="_blank" rel="noopener">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
@@ -2460,66 +2490,66 @@
           <!-- 左侧：产品面板展示（循环演示） -->
           <div class="hero-shot-wrap reveal">
             <div class="hero-shot demo-loop" aria-label="KimiCodeBar 菜单栏用量监控演示">
-          <div class="hero-glow"></div>
-          <div class="hero-menubar">
-            <div class="hero-menubar-left">
-              <span class="hero-apple">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                </svg>
-              </span>
-            </div>
-            <div class="hero-menubar-right">
-              <div class="hero-widget" title="本周用量 84% · 5 小时用量 6%">
-                <div class="hero-widget-row">
-                  <span class="hero-widget-k">7D</span>
-                  <span class="hero-widget-v">84%</span>
+              <div class="hero-glow"></div>
+              <div class="hero-menubar">
+                <div class="hero-menubar-left">
+                  <span class="hero-apple">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path
+                        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
+                  </span>
                 </div>
-                <div class="hero-widget-row">
-                  <span class="hero-widget-k">5H</span>
-                  <span class="hero-widget-v">6%</span>
+                <div class="hero-menubar-right">
+                  <div class="hero-widget" title="本周用量 84% · 5 小时用量 6%">
+                    <div class="hero-widget-row">
+                      <span class="hero-widget-k">7D</span>
+                      <span class="hero-widget-v">84%</span>
+                    </div>
+                    <div class="hero-widget-row">
+                      <span class="hero-widget-k">5H</span>
+                      <span class="hero-widget-v">6%</span>
+                    </div>
+                  </div>
+                  <span class="hero-sys-icon" title="Wi-Fi">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                      <line x1="12" y1="20" x2="12.01" y2="20" />
+                    </svg>
+                  </span>
+                  <span class="hero-sys-icon" title="电池">
+                    <svg width="26" height="13" viewBox="0 0 26 13" fill="none">
+                      <rect x="0.5" y="0.5" width="22" height="12" rx="3" stroke="currentColor" stroke-width="1" opacity="0.45" />
+                      <rect x="23.2" y="3.5" width="2" height="6" rx="0.8" fill="currentColor" opacity="0.45" />
+                      <rect x="2" y="2" width="18" height="9" rx="1.8" fill="currentColor" />
+                    </svg>
+                  </span>
+                  <span class="hero-sys-icon" title="控制中心">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="3" y1="8" x2="11" y2="8" />
+                      <circle cx="14" cy="8" r="3" fill="currentColor" stroke="none" />
+                      <line x1="17" y1="8" x2="21" y2="8" />
+                      <line x1="3" y1="16" x2="7" y2="16" />
+                      <circle cx="10" cy="16" r="3" />
+                      <line x1="13" y1="16" x2="21" y2="16" />
+                    </svg>
+                  </span>
+                  <span class="hero-clock" id="mockClock"></span>
                 </div>
               </div>
-              <span class="hero-sys-icon" title="Wi-Fi">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                  <line x1="12" y1="20" x2="12.01" y2="20" />
+              <div class="hero-panel">
+                <div class="kp-mount" data-theme="dark"></div>
+                <noscript><img src="assets/panel-01.png" alt="KimiCodeBar 暗夜模式面板" /></noscript>
+              </div>
+              <!-- 鼠标光标 + 点击波纹：循环演示用 -->
+              <div class="demo-cursor" aria-hidden="true">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 2 L3 21.5 L7.6 17.4 L10.4 22.6 L13 21.4 L10.2 16.2 L17 15.4 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.2" stroke-linejoin="round" />
                 </svg>
-              </span>
-              <span class="hero-sys-icon" title="电池">
-                <svg width="26" height="13" viewBox="0 0 26 13" fill="none">
-                  <rect x="0.5" y="0.5" width="22" height="12" rx="3" stroke="currentColor" stroke-width="1" opacity="0.45" />
-                  <rect x="23.2" y="3.5" width="2" height="6" rx="0.8" fill="currentColor" opacity="0.45" />
-                  <rect x="2" y="2" width="18" height="9" rx="1.8" fill="currentColor" />
-                </svg>
-              </span>
-              <span class="hero-sys-icon" title="控制中心">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="3" y1="8" x2="11" y2="8" />
-                  <circle cx="14" cy="8" r="3" fill="currentColor" stroke="none" />
-                  <line x1="17" y1="8" x2="21" y2="8" />
-                  <line x1="3" y1="16" x2="7" y2="16" />
-                  <circle cx="10" cy="16" r="3" />
-                  <line x1="13" y1="16" x2="21" y2="16" />
-                </svg>
-              </span>
-              <span class="hero-clock" id="mockClock"></span>
-            </div>
-          </div>
-          <div class="hero-panel">
-            <div class="kp-mount" data-theme="dark"></div>
-            <noscript><img src="assets/panel-01.png" alt="KimiCodeBar 暗夜模式面板" /></noscript>
-          </div>
-          <!-- 鼠标光标 + 点击波纹：循环演示用 -->
-          <div class="demo-cursor" aria-hidden="true">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 2 L3 21.5 L7.6 17.4 L10.4 22.6 L13 21.4 L10.2 16.2 L17 15.4 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.2" stroke-linejoin="round" />
-            </svg>
-          </div>
-          <div class="demo-ripple" aria-hidden="true"></div>
+              </div>
+              <div class="demo-ripple" aria-hidden="true"></div>
             </div>
           </div>
 
@@ -2539,13 +2569,13 @@
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                <span><b>菜单栏实时显示</b>本周 / 5 小时用量</span>
+                <span><b>菜单栏实时显示</b> 7天 / 5小时用量</span>
               </li>
               <li>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                <span><b>限额一目了然</b>，避免超额扣费</span>
+                <span><b>限额一目了然</b></span>
               </li>
             </ul>
             <div class="cta-row">
