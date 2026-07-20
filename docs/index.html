@@ -419,6 +419,15 @@
         white-space: nowrap;
       }
 
+      /* 英文主标题字符长，适当缩小字号并允许换行，保持中文不变 */
+      html.lang-en .hero h1 {
+        font-size: clamp(30px, 4.2vw, 46px);
+        letter-spacing: -1.2px;
+      }
+      html.lang-en .hero h1 .grad {
+        white-space: normal;
+      }
+
       .hero .sub {
         margin: 20px 0 0;
         max-width: 560px;
@@ -2110,6 +2119,10 @@
           font-size: 30px;
           letter-spacing: -1px;
         }
+        html.lang-en .hero h1 {
+          font-size: 26px;
+          letter-spacing: -0.8px;
+        }
         .hero .sub {
           font-size: 15px;
         }
@@ -2195,6 +2208,10 @@
           letter-spacing: -0.5px;
           word-break: break-word;
           overflow-wrap: anywhere;
+        }
+        html.lang-en .hero h1 {
+          font-size: 24px;
+          letter-spacing: -0.6px;
         }
         .hero .sub {
           font-size: 14px;
@@ -3154,7 +3171,7 @@
             iconControlCenterTitle: 'Control Center',
             langSwitchAria: 'Switch language',
             langMenuLabel: 'Language',
-            heroHeading: '✨ Free & Open Source<br><span class="grad">Kimi Code Usage Dashboard</span>',
+            heroHeading: '✨ Free & Open Source<br><span class="grad">Kimi Code Dashboard</span>',
             heroCheck1: '<b>Live in the menu bar</b> 7-day / 5-hour usage',
             heroCheck2: '<b>Quota at a glance</b>',
             downloadMacOS: 'macOS',
@@ -3265,6 +3282,8 @@
           window.__currentLang = lang;
           localStorage.setItem('kcb-lang', lang);
           document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+          document.documentElement.classList.remove('lang-zh', 'lang-en');
+          document.documentElement.classList.add('lang-' + lang);
 
           document.querySelectorAll('[data-i18n]').forEach(function (el) {
             var key = el.getAttribute('data-i18n');
