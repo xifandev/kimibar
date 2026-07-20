@@ -9,7 +9,6 @@ final class SparkleUpdater: ObservableObject {
     private let delegate: UpdaterDelegate
 
     @Published var isUpdateAvailable = false
-    @Published var isUpdateReadyToRestart = false
     @Published var didDownloadFail = false
 
     private init() {
@@ -23,17 +22,17 @@ final class SparkleUpdater: ObservableObject {
         delegate.owner = self
     }
 
-    /// 后台静默检查并下载更新（配合 SUAutomaticallyUpdate 使用）
+    /// 后台静默检查是否有新版本（不弹窗、不自动下载）
     func checkForUpdatesInBackground() {
         updaterController.updater.checkForUpdatesInBackground()
     }
 
-    /// 调用 Sparkle 立即安装并重启
-    func restartToInstallUpdate() {
-        delegate.installUpdateBlock?()
+    /// 弹出 Sparkle 标准更新窗口（含更新日志、进度条、立即更新/稍后/跳过）
+    func showStandardUpdateUI() {
+        updaterController.checkForUpdates(nil)
     }
 
-    /// 静默下载失败时，打开 GitHub Releases 页面让用户手动下载
+    /// 打开 GitHub Releases 页面让用户手动下载
     func openGitHubReleases() {
         if let url = URL(string: "https://github.com/xifandev/KimiCodeBar/releases/") {
             NSWorkspace.shared.open(url)
@@ -44,7 +43,6 @@ final class SparkleUpdater: ObservableObject {
 
     private final class UpdaterDelegate: NSObject, SPUUpdaterDelegate {
         weak var owner: SparkleUpdater?
-        var installUpdateBlock: (() -> Void)?
 
         func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
             DispatchQueue.main.async {
@@ -56,14 +54,6 @@ final class SparkleUpdater: ObservableObject {
         func updater(_ updater: SPUUpdater, didNotFindUpdate error: Error) {
             DispatchQueue.main.async {
                 self.owner?.isUpdateAvailable = false
-            }
-        }
-
-        func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock: @escaping () -> Void) {
-            DispatchQueue.main.async {
-                self.installUpdateBlock = immediateInstallationBlock
-                self.owner?.isUpdateReadyToRestart = true
-                self.owner?.didDownloadFail = false
             }
         }
 

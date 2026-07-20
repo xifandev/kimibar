@@ -639,7 +639,7 @@ struct AppUpdateRow: View {
     @State private var isHovered = false
 
     private var isClickable: Bool {
-        sparkleUpdater.isUpdateReadyToRestart || sparkleUpdater.didDownloadFail
+        sparkleUpdater.isUpdateAvailable || sparkleUpdater.didDownloadFail
     }
 
     var body: some View {
@@ -673,28 +673,14 @@ struct AppUpdateRow: View {
 
     @ViewBuilder
     private func rightContent() -> some View {
-        if sparkleUpdater.isUpdateReadyToRestart {
-            LText("重启完成更新")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.green)
-        } else if sparkleUpdater.didDownloadFail {
+        if sparkleUpdater.didDownloadFail {
             LText("下载新版本")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.orange)
         } else if sparkleUpdater.isUpdateAvailable || model.pendingAppUpdateVersion != nil {
-            HStack(spacing: 6) {
-                Text(appVersion())
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.kimiTextSecondary)
-
-                LText("发现新版本")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(.orange)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .background(Color.orange.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
+            LText("发现新版本")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.orange)
         } else {
             HStack(spacing: 6) {
                 Text(appVersion())
@@ -713,10 +699,10 @@ struct AppUpdateRow: View {
     }
 
     private func handleTap() {
-        if sparkleUpdater.isUpdateReadyToRestart {
-            sparkleUpdater.restartToInstallUpdate()
-        } else if sparkleUpdater.didDownloadFail {
+        if sparkleUpdater.didDownloadFail {
             sparkleUpdater.openGitHubReleases()
+        } else if sparkleUpdater.isUpdateAvailable {
+            sparkleUpdater.showStandardUpdateUI()
         }
     }
 }
