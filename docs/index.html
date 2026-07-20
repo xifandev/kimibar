@@ -154,8 +154,11 @@
       }
 
       /* 语言切换器 */
-      .lang-switch {
+      .lang-wrap {
         position: relative;
+        display: inline-flex;
+      }
+      .lang-switch {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -202,13 +205,15 @@
         backdrop-filter: blur(18px) saturate(1.4);
         -webkit-backdrop-filter: blur(18px) saturate(1.4);
         opacity: 0;
+        visibility: hidden;
         transform: translateY(-6px) scale(0.96);
         pointer-events: none;
-        transition: opacity 0.18s, transform 0.18s;
+        transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
         z-index: 200;
       }
-      .lang-switch[aria-expanded='true'] .lang-menu {
+      .lang-switch[aria-expanded='true'] ~ .lang-menu {
         opacity: 1;
+        visibility: visible;
         transform: none;
         pointer-events: auto;
       }
@@ -2558,21 +2563,23 @@
           KimiCodeBar
         </a>
         <div class="nav-links">
-          <button type="button" class="lang-switch" id="langSwitch" aria-haspopup="true" aria-expanded="false" data-i18n="langSwitchAria" aria-label="切换语言">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M2 12h20" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            <span id="langSwitchLabel">中文</span>
-            <svg class="lang-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+          <div class="lang-wrap">
+            <button type="button" class="lang-switch" id="langSwitch" aria-haspopup="true" aria-expanded="false" data-i18n="langSwitchAria" aria-label="切换语言">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span id="langSwitchLabel">中文</span>
+              <svg class="lang-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
             <div class="lang-menu" role="menu" data-i18n="langMenuLabel" aria-label="语言选择">
               <button type="button" role="menuitem" data-lang="zh">中文</button>
               <button type="button" role="menuitem" data-lang="en">English</button>
             </div>
-          </button>
+          </div>
           <a class="btn btn-outline-blue btn-sm nav-kimi-link" href="https://www.kimi.com/code" target="_blank" rel="noopener" title="Kimi Code">
             <img src="assets/kimi-logo.png" alt="Kimi Code" class="nav-kimi-logo" />
           </a>
