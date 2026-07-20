@@ -241,9 +241,18 @@
       }
 
       @media (max-width: 880px) {
+        .hero {
+          text-align: center;
+        }
         .hero-split {
           grid-template-columns: 1fr;
           gap: 40px;
+        }
+        .hero-split > .reveal:last-child {
+          order: -1;
+        }
+        .hero h1 .grad {
+          white-space: normal;
         }
       }
 
@@ -285,10 +294,11 @@
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
+        white-space: nowrap;
       }
 
       .hero .sub {
-        margin: 20px 0 0;
+        margin: 20px auto 0;
         max-width: 560px;
         font-size: 18px;
         color: var(--text-2);
