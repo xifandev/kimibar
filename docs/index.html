@@ -2112,14 +2112,13 @@
                   （盒子本身的边框 / 圆角 / 阴影 / 尺寸保持不动，溢出部分被 overflow:hidden 切掉）
          15–28%  定格放大
          28–42%  镜头拉回，菜单栏恢复
-         42–50%  正常视图短暂停留
-         50–58%  鼠标从右下角飞向 7D/5H 芯片
+         42–52%  正常视图短暂停留
+         52–58%  鼠标直接出现在 7D/5H 芯片上（不再从右下角飞入）
          58–63%  点击（波纹扩散 + 芯片虚线高亮）
          63–66%  面板弹出
          66–90%  面板停留约 2.4s
-         90–93%  面板收回
-         93–96%  鼠标离开
-         96–100% 短暂停留后无缝循环
+         90–91%  面板收回
+         91–100% 鼠标直接消失（不再飞回右下角），短暂停留后无缝循环
       */
       .hero-shot.demo-loop {
         /* 盒子本身不动：保留原 overflow:hidden 切掉放大后溢出到盒子外的部分，
@@ -2127,14 +2126,16 @@
       }
 
       /* 菜单栏作为"镜头下的场景"在 hero-shot 盒子内被放大；
-         镜头中心对准 7D/5H 标签中心（Playwright 实测 widget 中心在 menubar 46% / 50% 处），
-         所以放大时 widget 位置不动，Apple 图标被推左、WiFi/电池/控制中心/时钟被推右。
-         溢出部分被 hero-shot 的 overflow:hidden 自动切掉，不会跑到盒子外。
+         镜头中心对准 7D/5H 标签中心（Playwright 实测 widget 中心在 menubar 46% / 50% 处）。
+         但放大时顶部容易被 overflow:hidden 切掉，所以把 transform-origin 的 y 轴
+         从 50% 往上提到 25%：放大时菜单栏更多向下展开，顶部（Apple / 7D5H 标签）
+         完整保留在 hero-shot 内。同时把缩放倍数从 2.4 降到 2.0，进一步减少溢出。
+         溢出部分仍被 hero-shot 的 overflow:hidden 自动切掉，不会跑到盒子外。
          放大倍数用 --demo-zoom 控制，窄屏下自动缩小避免溢出太多。 */
       .hero-shot.demo-loop .hero-menubar {
-        --demo-zoom: 2.4;
+        --demo-zoom: 2.0;
         z-index: 5;
-        transform-origin: 46% 50%;
+        transform-origin: 46% 25%;
         animation: demo-menubar-zoom 10s ease-in-out infinite;
         will-change: transform;
       }
@@ -2208,19 +2209,22 @@
         }
       }
 
-      /* 鼠标光标：macOS 箭头 */
+      /* 鼠标光标：直接出现在 widget 上，点击后停留，面板收回后直接消失。
+         不再从右下角飞入飞出，避免分散用户对菜单栏聚焦的注意力。 */
       .demo-cursor {
         position: absolute;
-        top: 50%;
-        left: 50%;
+        top: 4.4%;
+        left: 44.4%;
         width: 28px;
         height: 28px;
+        margin-left: 2px;
+        margin-top: 2px;
         pointer-events: none;
         opacity: 0;
         z-index: 20;
         filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55));
         animation: demo-cursor-move 10s cubic-bezier(0.45, 0.05, 0.2, 1) infinite;
-        will-change: top, left, opacity;
+        will-change: opacity;
       }
 
       .demo-cursor svg {
@@ -2231,41 +2235,16 @@
 
       @keyframes demo-cursor-move {
         0%,
-        50% {
+        52% {
           opacity: 0;
-          top: 92%;
-          left: 90%;
         }
-        53% {
-          opacity: 1;
-          top: 92%;
-          left: 90%;
-        }
-        58% {
-          opacity: 1;
-          top: 4.4%;
-          left: 44.4%;
-        }
-        63% {
-          opacity: 1;
-          top: 4.4%;
-          left: 44.4%;
-        }
+        53%,
         90% {
           opacity: 1;
-          top: 4.4%;
-          left: 44.4%;
         }
-        93% {
-          opacity: 1;
-          top: 92%;
-          left: 90%;
-        }
-        96%,
+        91%,
         100% {
           opacity: 0;
-          top: 92%;
-          left: 90%;
         }
       }
 
