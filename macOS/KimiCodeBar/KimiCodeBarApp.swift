@@ -630,6 +630,69 @@ final class KimiCodeLogoLayerView: NSView {
     }
 }
 
+// MARK: - App 自动更新行（Sparkle）
+
+struct AppUpdateRow: View {
+    @StateObject private var model = KimiCodeBarModel.shared
+    @StateObject private var languageManager = LanguageManager.shared
+    @StateObject private var sparkleUpdater = SparkleUpdater.shared
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text("KimiCodeBar")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.kimiTextTertiary)
+
+            Spacer()
+
+            updateButtonText()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.kimiCardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.kimiTextPrimary.opacity(isHovered ? 0.06 : 0))
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
+        .cursor(.pointingHand)
+        .onTapGesture {
+            handleTap()
+        }
+    }
+
+    @ViewBuilder
+    private func updateButtonText() -> some View {
+        if sparkleUpdater.isUpdateReadyToRestart {
+            LText("重启完成更新")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.green)
+        } else if model.pendingAppUpdateVersion != nil || sparkleUpdater.isUpdateAvailable {
+            LText("下载新版本")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.orange)
+        } else {
+            LText("检查更新…")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.kimiBlue)
+        }
+    }
+
+    private func handleTap() {
+        if sparkleUpdater.isUpdateReadyToRestart {
+            sparkleUpdater.restartToInstallUpdate()
+        } else {
+            sparkleUpdater.checkForUpdatesInBackground()
+        }
+    }
+}
+
 // MARK: - 主面板
 
 struct KimiMenu: View {
@@ -645,7 +708,6 @@ struct KimiMenu: View {
     @State private var isMenuVisible = false
     @State private var kimiServerOperation: KimiServerOperation = .none
     @State private var isKimiServerRestartHintDismissed = false
-    @State private var isHoveredCheckUpdate = false
 
     private let consoleURL = URL(string: "https://www.kimi.com/code/console")!
     private let githubURL = URL(string: "https://github.com/xifandev/KimiCodeBar")!
@@ -861,40 +923,7 @@ struct KimiMenu: View {
             }
 
             // App 自动更新检查（Sparkle）
-            HStack(spacing: 10) {
-                Text("KimiCodeBar")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.kimiTextTertiary)
-
-                Spacer()
-
-                let updateAvailable = model.pendingAppUpdateVersion != nil
-                let updateText = updateAvailable
-                    ? languageManager.tr("下载新版本")
-                    : languageManager.tr("检查更新…")
-                let updateColor: Color = updateAvailable ? .orange : .kimiBlue
-
-                Text(updateText)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(isHoveredCheckUpdate ? updateColor.opacity(0.8) : updateColor)
-                    .contentShape(Rectangle())
-                    .cursor(.pointingHand)
-                    .onHover { isHoveredCheckUpdate = $0 }
-                    .onTapGesture {
-                        SparkleUpdater.shared.checkForUpdates()
-                    }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.kimiCardBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.kimiTextPrimary.opacity(isHoveredCheckUpdate ? 0.06 : 0))
-                    )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            AppUpdateRow()
         }
         .padding(16)
         .frame(width: 340)
@@ -913,6 +942,8 @@ struct KimiMenu: View {
                 if !model.isLoading {
                     model.refresh(showsLoading: false)
                 }
+                // 面板打开时触发 Sparkle 后台检查与自动下载
+                SparkleUpdater.shared.checkForUpdatesInBackground()
             }
         }
         .popover(isPresented: $showUpdateAlert, arrowEdge: .trailing) {

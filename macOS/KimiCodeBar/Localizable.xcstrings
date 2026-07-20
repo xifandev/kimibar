@@ -1417,6 +1417,16 @@
         }
       }
     },
+    "重启完成更新" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restart to Update"
+          }
+        }
+      }
+    },
     "更新到 %@" : {
       "localizations" : {
         "en" : {
