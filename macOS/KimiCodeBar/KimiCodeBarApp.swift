@@ -4411,18 +4411,10 @@ final class KimiCodeBarModel: ObservableObject {
             return
         }
 
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        task.arguments = [
-            "-e",
-            """
-            tell application "Terminal"
-                activate
-                do script "kimi web --no-open --dangerous-bypass-auth"
-            end tell
-            """
-        ]
-        try? task.run()
+        // 使用 .command 文件启动 Terminal，绕过 AppleScript 自动化权限限制，
+        // 修复某些环境下 Terminal 窗口弹出但命令未输入的问题。
+        guard let commandURL = writeKimiWebCommandFile() else { return }
+        NSWorkspace.shared.open(commandURL)
 
         // 轮询等待 server 起来（最多 10 秒）
         for _ in 0..<10 {
@@ -4431,6 +4423,25 @@ final class KimiCodeBarModel: ObservableObject {
             if state.status == .running { break }
         }
         await refreshKimiServerState()
+    }
+
+    /// 在 Application Support 目录写入启动脚本并返回其 URL。
+    private func writeKimiWebCommandFile() -> URL? {
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let dir = appSupport.appendingPathComponent("KimiCodeBar", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let commandURL = dir.appendingPathComponent("start-kimi-web.command")
+        let script = "#!/bin/zsh\nkimi web --no-open --dangerous-bypass-auth\n"
+        try? script.write(to: commandURL, atomically: true, encoding: .utf8)
+
+        var attributes = [FileAttributeKey: Any]()
+        attributes[.posixPermissions] = 0o755
+        try? FileManager.default.setAttributes(attributes, ofItemAtPath: commandURL.path)
+
+        return commandURL
     }
 
     func stopKimiServer() async {
