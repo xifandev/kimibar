@@ -2166,16 +2166,16 @@
       }
 
       /* 菜单栏作为"镜头下的场景"在 hero-shot 盒子内被放大；
-         镜头中心对准 7D/5H 标签中心（Playwright 实测 widget 中心在 menubar 46% / 50% 处）。
-         但放大时顶部容易被 overflow:hidden 切掉，所以把 transform-origin 的 y 轴
-         从 50% 往上提到 25%：放大时菜单栏更多向下展开，顶部（Apple / 7D5H 标签）
-         完整保留在 hero-shot 内。同时把缩放倍数从 2.4 降到 2.0，进一步减少溢出。
-         溢出部分仍被 hero-shot 的 overflow:hidden 自动切掉，不会跑到盒子外。
-         放大倍数用 --demo-zoom 控制，窄屏下自动缩小避免溢出太多。 */
+         镜头中心对准 7D/5H 标签中心。
+         之前 46% 25% / 2.0、46% 0% / 1.8 都会让横向溢出太多导致 Apple 跑出 hero-shot。
+         改为：
+         - transform-origin: 50% 0%（水平居中，顶部固定）
+         - --demo-zoom: 1.3（再缩小，让 Apple 和右侧时钟都留在 hero-shot 内可见）
+         溢出部分由 hero-shot 的 overflow:hidden 自动切掉。 */
       .hero-shot.demo-loop .hero-menubar {
-        --demo-zoom: 2.0;
+        --demo-zoom: 1.3;
         z-index: 5;
-        transform-origin: 46% 25%;
+        transform-origin: 50% 0%;
         animation: demo-menubar-zoom 10s ease-in-out infinite;
         will-change: transform;
       }
