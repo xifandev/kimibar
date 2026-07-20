@@ -4721,8 +4721,7 @@ final class KimiCodeBarModel: ObservableObject {
     }
 
     func checkForAppUpdate() async {
-        let (latest, _) = await fetchLatestGitHubRelease(owner: "xifandev", repo: "KimiCodeBar")
-        guard let latest = latest else { return }
+        guard let latest = await fetchLatestVersionFromAppcast() else { return }
 
         let current = normalizeVersion(appVersion())
 
@@ -4731,6 +4730,34 @@ final class KimiCodeBarModel: ObservableObject {
 
         await MainActor.run {
             pendingAppUpdateVersion = latest
+        }
+    }
+
+    /// 从 Sparkle appcast.xml 中解析最新版本号，避免调用 GitHub API 触发限流
+    private func fetchLatestVersionFromAppcast() async -> String? {
+        guard let feedURLString = Bundle.main.infoDictionary?["SUFeedURL"] as? String,
+              let url = URL(string: feedURLString) else {
+            return nil
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                return nil
+            }
+
+            let xml = String(data: data, encoding: .utf8) ?? ""
+            let pattern = "<sparkle:shortVersionString>([^<]+)</sparkle:shortVersionString>"
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+                  let match = regex.firstMatch(in: xml, options: [], range: NSRange(xml.startIndex..., in: xml)),
+                  let range = Range(match.range(at: 1), in: xml) else {
+                return nil
+            }
+
+            return String(xml[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch {
+            return nil
         }
     }
 
