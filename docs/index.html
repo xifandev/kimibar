@@ -390,40 +390,13 @@
         pointer-events: none;
       }
 
-      .hero-glow {
-        position: absolute;
-        bottom: -25%;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 90%;
-        height: 70%;
-        background: radial-gradient(ellipse at center, rgba(59, 130, 245, 0.35) 0%, transparent 70%);
-        filter: blur(50px);
-        pointer-events: none;
-      }
+      /* hero-shot 自带丰富的背景渐变（多个 radial-gradient + linear-gradient），
+         不再需要额外加 orb 装饰。之前的 .hero-orb-1/.hero-orb-2 在右上角
+         产生明显的圆形光斑，被 32px 圆角矩形 + overflow:hidden 切角后，
+         边缘呈现不完整的弧线，看起来像 bug。
+         只保留 .hero-glow（底部柔光）和 .hero-shot::before（顶部反光）两个
+         装饰层。 */
 
-      .hero-orb {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(70px);
-        pointer-events: none;
-      }
-
-      .hero-orb-1 {
-        top: -15%;
-        right: -15%;
-        width: 200px;
-        height: 200px;
-        background: rgba(59, 130, 245, 0.22);
-      }
-
-      .hero-orb-2 {
-        bottom: 0%;
-        left: -15%;
-        width: 160px;
-        height: 160px;
-        background: rgba(123, 97, 255, 0.16);
-      }
 
       /* 顶部状态条 —— 模拟 macOS 菜单栏 */
       .hero-menubar {
@@ -2463,8 +2436,6 @@
           <div class="hero-shot-wrap reveal">
             <div class="hero-shot demo-loop" aria-label="KimiCodeBar 菜单栏用量监控演示">
           <div class="hero-glow"></div>
-          <div class="hero-orb hero-orb-1"></div>
-          <div class="hero-orb hero-orb-2"></div>
           <div class="hero-menubar">
             <div class="hero-menubar-left">
               <span class="hero-apple">
