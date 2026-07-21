@@ -11,6 +11,10 @@ final class SparkleUpdater: ObservableObject {
     @Published var isUpdateAvailable = false
     @Published var didDownloadFail = false
 
+    /// 自动探测的最小间隔，避免用户高频打开面板时反复请求更新源。
+    private let minCheckInterval: TimeInterval = 300 // 5 分钟
+    private var lastCheckDate: Date?
+
     private init() {
         let delegate = UpdaterDelegate()
         self.delegate = delegate
@@ -22,9 +26,16 @@ final class SparkleUpdater: ObservableObject {
         delegate.owner = self
     }
 
-    /// 后台静默检查是否有新版本（不弹窗、不自动下载）
-    func checkForUpdatesInBackground() {
-        updaterController.updater.checkForUpdatesInBackground()
+    /// 探测是否有新版本（不弹窗、不自动下载）
+    /// 使用 checkForUpdateInformation 而非 checkForUpdatesInBackground，
+    /// 避免用户刚打开面板时 Sparkle 自动弹出更新窗口。
+    /// 5 分钟内重复打开面板不会再次触发探测。
+    func checkForUpdateInformation() {
+        if let last = lastCheckDate, Date().timeIntervalSince(last) < minCheckInterval {
+            return
+        }
+        lastCheckDate = Date()
+        updaterController.updater.checkForUpdateInformation()
     }
 
     /// 弹出 Sparkle 标准更新窗口（含更新日志、进度条、立即更新/稍后/跳过）

@@ -10,10 +10,26 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: write
+      pages: write
+      id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Download Sparkle tools
+        run: |
+          SPARKLE_VERSION=2.6.4
+          curl -L -o sparkle.tar.xz "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
+          tar -xf sparkle.tar.xz
+          mkdir -p sparkle-tools
+          cp Sparkle-${SPARKLE_VERSION}/bin/generate_appcast sparkle-tools/
 
       - name: Build KimiCodeBar
         run: |
@@ -31,10 +47,50 @@ jobs:
           cp -R macOS/build/Release/KimiCodeBar.app dist/
           cd dist
           VERSION="${GITHUB_REF_NAME#v}"
-          zip -r "KimiCodeBar-macOS-${VERSION}.zip" KimiCodeBar.app
+          # Sparkle 自动更新用 zip
+          zip -r "KimiCodeBar-${VERSION}-sparkle-update.zip" KimiCodeBar.app
+          # 用户首次安装用 dmg
+          create-dmg \
+            --volname "KimiCodeBar" \
+            --background "../macOS/Resources/dmg-background.png" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 450 210 \
+            --icon "KimiCodeBar.app" 150 210 \
+            --no-internet-enable \
+            "KimiCodeBar-${VERSION}.dmg" \
+            "KimiCodeBar.app"
+
+      - name: Generate Appcast
+        env:
+          SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ZIP_NAME="KimiCodeBar-${VERSION}-sparkle-update.zip"
+          mkdir -p updates
+          cp "dist/${ZIP_NAME}" updates/
+          echo "$SPARKLE_PRIVATE_ED_KEY" | ./sparkle-tools/generate_appcast \
+            --ed-key-file - \
+            --download-url-prefix "https://github.com/xifandev/KimiCodeBar/releases/download/${GITHUB_REF_NAME}/" \
+            -o appcast.xml \
+            updates/
+          mkdir -p docs
+          cp appcast.xml docs/appcast.xml
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/KimiCodeBar-macOS-*.zip
+          files: |
+            dist/KimiCodeBar-*.dmg
+            dist/KimiCodeBar-*-sparkle-update.zip
           generate_release_notes: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

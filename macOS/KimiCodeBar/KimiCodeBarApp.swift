@@ -638,13 +638,9 @@ struct AppUpdateRow: View {
     @StateObject private var sparkleUpdater = SparkleUpdater.shared
     @State private var isHovered = false
 
-    private var isClickable: Bool {
-        sparkleUpdater.isUpdateAvailable || sparkleUpdater.didDownloadFail
-    }
-
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            Text("KimiCodeBar")
+            Text("KimiCode Bar")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.kimiTextTertiary)
 
@@ -659,15 +655,15 @@ struct AppUpdateRow: View {
                 .fill(Color.kimiCardBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.kimiTextPrimary.opacity(isHovered && isClickable ? 0.06 : 0))
+                        .fill(Color.kimiTextPrimary.opacity(isHovered ? 0.06 : 0))
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
-        .cursor(isClickable ? .pointingHand : .arrow)
+        .cursor(.pointingHand)
         .onTapGesture {
-            handleTap()
+            openGitHubReleases()
         }
     }
 
@@ -698,12 +694,8 @@ struct AppUpdateRow: View {
         }
     }
 
-    private func handleTap() {
-        if sparkleUpdater.didDownloadFail {
-            sparkleUpdater.openGitHubReleases()
-        } else if sparkleUpdater.isUpdateAvailable {
-            sparkleUpdater.showStandardUpdateUI()
-        }
+    private func openGitHubReleases() {
+        sparkleUpdater.openGitHubReleases()
     }
 }
 
@@ -713,12 +705,7 @@ struct KimiMenu: View {
     @StateObject private var model = KimiCodeBarModel.shared
     @StateObject private var languageManager = LanguageManager.shared
     @Environment(\.colorScheme) private var colorScheme
-    @State private var showUpdateAlert = false
-    @State private var showAppUpdateAlert = false
-    @State private var showUpdateLog = false
-    @State private var showUpdateErrorPopover = false
     @State private var isHoveredUpdateLog = false
-    @State private var isHoveredUpdateError = false
     @State private var isMenuVisible = false
     @State private var kimiServerOperation: KimiServerOperation = .none
     @State private var isKimiServerRestartHintDismissed = false
@@ -849,64 +836,44 @@ struct KimiMenu: View {
                 )
             }
 
-            // 版本卡片
-            let canShowUpdateLog = model.kimiVersion != languageManager.tr("检测中…") && model.kimiVersion != languageManager.tr("未检测到")
-
+            // KimiCode CLI 版本行：点击跳转官方更新日志
             HStack(alignment: .center, spacing: 10) {
                 Text("KimiCode CLI")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.kimiTextTertiary)
+
+                Spacer()
 
                 HStack(spacing: 6) {
                     Text(formatKimiVersion(model.kimiVersion))
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(.kimiTextSecondary)
 
-                    if canShowUpdateLog {
-                        if model.pendingUpdateVersion != nil || model.hasCachedKimiUpdate {
-                            LText("发现新版本")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(.orange)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(Color.orange.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                        } else if model.updateErrorMessage != nil && !model.updateErrorMessage!.isEmpty {
-                            LText("检查更新失败")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(isHoveredUpdateError ? .red.opacity(0.9) : .red)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(isHoveredUpdateError ? Color.red.opacity(0.18) : Color.red.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                                .contentShape(Rectangle())
-                                .cursor(.pointingHand)
-                                .onHover { isHoveredUpdateError = $0 }
-                                .onTapGesture {
-                                    showUpdateErrorPopover = true
-                                }
-                                .popover(isPresented: $showUpdateErrorPopover, arrowEdge: .bottom) {
-                                    UpdateErrorPopoverView(errorMessage: model.updateErrorMessage ?? "")
-                                }
-                        } else {
-                            LText("当前最新")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(.kimiTextTertiary)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(Color.kimiTextPrimary.opacity(0.08))
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                        }
+                    if model.updateErrorMessage != nil && !model.updateErrorMessage!.isEmpty {
+                        LText("检查更新失败")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.red)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.red.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    } else if model.pendingUpdateVersion != nil || model.hasCachedKimiUpdate {
+                        LText("发现新版本")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.orange)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.orange.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    } else {
+                        LText("当前最新")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.kimiTextTertiary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.kimiTextPrimary.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
-
-                }
-
-                Spacer()
-
-                if canShowUpdateLog {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(isHoveredUpdateLog ? .kimiTextSecondary : .kimiTextTertiary)
                 }
             }
             .padding(.horizontal, 14)
@@ -916,27 +883,20 @@ struct KimiMenu: View {
                     .fill(Color.kimiCardBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.kimiTextPrimary.opacity(canShowUpdateLog && isHoveredUpdateLog ? 0.06 : 0))
+                            .fill(Color.kimiTextPrimary.opacity(isHoveredUpdateLog ? 0.06 : 0))
                     )
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .contentShape(Rectangle())
             .onHover { isHoveredUpdateLog = $0 }
-            .cursor(canShowUpdateLog ? .pointingHand : .arrow)
+            .cursor(.pointingHand)
             .onTapGesture {
-                if canShowUpdateLog {
-                    if model.hasCachedKimiUpdate || model.pendingUpdateVersion != nil {
-                        showUpdateAlert = true
-                    } else {
-                        showUpdateLog = true
-                    }
+                if let url = URL(string: "https://moonshotai.github.io/kimi-code/zh/release-notes/changelog.html") {
+                    NSWorkspace.shared.open(url)
                 }
             }
-            .popover(isPresented: $showUpdateLog, arrowEdge: .bottom) {
-                UpdateLogView()
-            }
 
-            // App 自动更新检查（Sparkle）
+            // KimiCodeBar 版本行：点击跳转 GitHub Release
             AppUpdateRow()
         }
         .padding(16)
@@ -948,6 +908,13 @@ struct KimiMenu: View {
             }
         }
         .background(WindowVisibilityDetector(isVisible: $isMenuVisible))
+        .onAppear {
+            model.checkCachedKimiUpdate()
+            Task {
+                await model.loadKimiVersion()
+                await model.checkForKimiCLIUpdate()
+            }
+        }
         .onChange(of: isMenuVisible) { _, isVisible in
             if isVisible {
                 isKimiServerRestartHintDismissed = false
@@ -956,91 +923,16 @@ struct KimiMenu: View {
                 if !model.isLoading {
                     model.refresh(showsLoading: false)
                 }
-                // 面板打开时触发 Sparkle 后台检查与自动下载
-                SparkleUpdater.shared.checkForUpdatesInBackground()
-            }
-        }
-        .popover(isPresented: $showUpdateAlert, arrowEdge: .trailing) {
-            UpdateAlertView(
-                currentVersion: formatKimiVersion(model.kimiVersion),
-                newVersion: model.pendingUpdateVersion ?? languageManager.tr("新版"),
-                onDismiss: {
-                    showUpdateAlert = false
-                    model.pendingUpdateVersion = nil
-                    // 一小时后再次提醒
-                    model.snoozedKimiUpdateUntil = Date().timeIntervalSince1970 + 3600
-                },
-                onInstall: {
-                    showUpdateAlert = false
-                    model.pendingUpdateVersion = nil
-                    Task { await installKimiCLIUpdate() }
-                }
-            )
-        }
-        /*
-        .popover(isPresented: $showAppUpdateAlert, arrowEdge: .trailing) {
-            AppUpdateAlertView(
-                currentVersion: appVersion(),
-                newVersion: model.pendingAppUpdateVersion ?? languageManager.tr("新版"),
-                onIgnore: {
-                    showAppUpdateAlert = false
-                    model.ignoreAppUpdate()
-                },
-                onViewUpdate: {
-                    showAppUpdateAlert = false
-                    dismissMenuBarPanel()
-                    NSWorkspace.shared.open(URL(string: "https://github.com/xifandev/KimiCodeBar/releases/")!)
-                    model.pendingAppUpdateVersion = nil
-                }
-            )
-        }
-        */
-        .onAppear {
-            model.checkCachedKimiUpdate()
-            if model.pendingUpdateVersion != nil {
-                showUpdateAlert = true
-            }
-
-            Task {
-                await model.loadKimiVersion()
-                await model.checkForKimiCLIUpdate()
-
-                // 版本已追平（例如刚在外部更新完 CLI），关闭基于过期状态弹出的更新提示
-                if model.pendingUpdateVersion == nil {
-                    showUpdateAlert = false
-                }
-            }
-        }
-        .onChange(of: isMenuVisible) { _, visible in
-            if visible {
-                model.checkCachedKimiUpdate()
-                if model.pendingUpdateVersion != nil {
-                    showUpdateAlert = true
-                }
-
+                // 面板打开时探测 App 新版本，只更新状态、不弹窗
+                SparkleUpdater.shared.checkForUpdateInformation()
+                // 刷新 KimiCode CLI 版本与更新状态
                 Task {
                     await model.loadKimiVersion()
                     await model.checkForKimiCLIUpdate()
-
-                    // 版本已追平（例如刚在外部更新完 CLI），关闭基于过期状态弹出的更新提示
-                    if model.pendingUpdateVersion == nil {
-                        showUpdateAlert = false
-                    }
                 }
             }
         }
-        /*
-        .onChange(of: model.pendingAppUpdateVersion) { _, newValue in
-            if newValue != nil && model.pendingUpdateVersion == nil {
-                showAppUpdateAlert = true
-            }
-        }
-        .onChange(of: showUpdateAlert) { _, isShowing in
-            if !isShowing && model.pendingAppUpdateVersion != nil {
-                showAppUpdateAlert = true
-            }
-        }
-        */
+
     }
 
     private func installKimiCLIUpdate() async {

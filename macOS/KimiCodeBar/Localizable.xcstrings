@@ -213,6 +213,9 @@
         }
       }
     },
+    "KimiCode Bar" : {
+
+    },
     "KimiCode Bar 设置" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -326,6 +329,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Last auto-archive: %1$@ · %2$d sessions"
+          }
+        }
+      }
+    },
+    "下载新版本" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download New Version"
           }
         }
       }
@@ -1254,6 +1268,17 @@
         }
       }
     },
+    "更新到 %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update to %@"
+          }
+        }
+      }
+    },
     "月之亮面" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1398,41 +1423,12 @@
       }
     },
     "检查更新…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Check for Updates…"
-          }
-        }
-      }
-    },
-    "下载新版本" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Download New Version"
-          }
-        }
-      }
-    },
-    "重启完成更新" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restart to Update"
-          }
-        }
-      }
-    },
-    "更新到 %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Update to %@"
           }
         }
       }
@@ -1961,6 +1957,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Restart"
+          }
+        }
+      }
+    },
+    "重启完成更新" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restart to Update"
           }
         }
       }
