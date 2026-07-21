@@ -29,7 +29,7 @@ jobs:
           curl -L -o sparkle.tar.xz "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
           tar -xf sparkle.tar.xz
           mkdir -p sparkle-tools
-          cp Sparkle-${SPARKLE_VERSION}/bin/generate_appcast sparkle-tools/
+          cp bin/generate_appcast sparkle-tools/
 
       - name: Build KimiCodeBar
         run: |
