@@ -9,6 +9,7 @@ final class SparkleUpdater: ObservableObject {
     private let delegate: UpdaterDelegate
 
     @Published var isUpdateAvailable = false
+    @Published var isUpdateReadyToRestart = false
     @Published var didDownloadFail = false
 
     /// 自动探测的最小间隔，避免用户高频打开面板时反复请求更新源。
@@ -47,6 +48,11 @@ final class SparkleUpdater: ObservableObject {
         }
     }
 
+    /// 调用 Sparkle 立即安装并重启
+    func restartToInstallUpdate() {
+        delegate.installUpdateBlock?()
+    }
+
     /// 打开 GitHub Releases 页面让用户手动下载
     func openGitHubReleases() {
         if let url = URL(string: "https://github.com/xifandev/KimiCodeBar/releases/") {
@@ -58,6 +64,7 @@ final class SparkleUpdater: ObservableObject {
 
     private final class UpdaterDelegate: NSObject, SPUUpdaterDelegate {
         weak var owner: SparkleUpdater?
+        var installUpdateBlock: (() -> Void)?
 
         func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
             DispatchQueue.main.async {
@@ -75,6 +82,13 @@ final class SparkleUpdater: ObservableObject {
         func updater(_ updater: SPUUpdater, failedToDownloadUpdate item: SUAppcastItem, error: Error) {
             DispatchQueue.main.async {
                 self.owner?.didDownloadFail = true
+            }
+        }
+
+        func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock: @escaping () -> Void) {
+            DispatchQueue.main.async {
+                self.installUpdateBlock = immediateInstallationBlock
+                self.owner?.isUpdateReadyToRestart = true
             }
         }
     }

@@ -663,7 +663,13 @@ struct AppUpdateRow: View {
         .onHover { isHovered = $0 }
         .cursor(.pointingHand)
         .onTapGesture {
-            openGitHubReleases()
+            if sparkleUpdater.isUpdateReadyToRestart {
+                sparkleUpdater.restartToInstallUpdate()
+            } else if sparkleUpdater.isUpdateAvailable || model.pendingAppUpdateVersion != nil {
+                sparkleUpdater.showStandardUpdateUI()
+            } else {
+                openGitHubReleases()
+            }
         }
     }
 
