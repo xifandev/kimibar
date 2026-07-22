@@ -50,7 +50,8 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           # Sparkle 自动更新用 zip
           zip -r "KimiCodeBar-${VERSION}-sparkle-update.zip" KimiCodeBar.app
-          # 用户首次安装用 dmg
+          # 用户首次安装用 dmg（明确标注 macOS，避免与后续 Windows 版混淆）
+          DMG_NAME="KimiCodeBar-${VERSION}-macOS.dmg"
           create-dmg \
             --volname "KimiCodeBar" \
             --background "../macOS/Resources/dmg-background.png" \
@@ -60,7 +61,7 @@ jobs:
             --app-drop-link 450 210 \
             --icon "KimiCodeBar.app" 150 210 \
             --no-internet-enable \
-            "KimiCodeBar-${VERSION}.dmg" \
+            "${DMG_NAME}" \
             "KimiCodeBar.app"
 
       - name: Generate Appcast
@@ -83,7 +84,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/KimiCodeBar-*.dmg
+            dist/KimiCodeBar-*-macOS.dmg
             dist/KimiCodeBar-*-sparkle-update.zip
           body_path: CHANGELOG.md
 
