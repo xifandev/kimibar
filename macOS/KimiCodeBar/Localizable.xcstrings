@@ -1532,17 +1532,6 @@
         }
       }
     },
-    "浅色外观" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Light appearance"
-          }
-        }
-      }
-    },
     "浏览器一键授权" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1550,17 +1539,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "One-click authorization in your browser"
-          }
-        }
-      }
-    },
-    "深色外观" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dark appearance"
           }
         }
       }
@@ -1616,17 +1594,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The version API returned an unexpected status code: %@"
-          }
-        }
-      }
-    },
-    "登录 macOS 后自动启动 KimiCodeBar" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Launch KimiCodeBar automatically after logging in to macOS"
           }
         }
       }
@@ -1759,28 +1726,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Network error: %@"
-          }
-        }
-      }
-    },
-    "自动切换明暗" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatic appearance"
-          }
-        }
-      }
-    },
-    "自动刷新" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto Refresh"
           }
         }
       }
@@ -1939,13 +1884,13 @@
         }
       }
     },
-    "选择左侧技能以预览内容" : {
+    "选择上方技能以预览内容" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select a skill on the left to preview its content"
+            "value" : "Select a skill above to preview its content"
           }
         }
       }
@@ -2023,6 +1968,94 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Default"
+          }
+        }
+      }
+    },
+    "面板自定义" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Panel Customization"
+          }
+        }
+      }
+    },
+    "加油包余额卡片" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Booster Pack Card"
+          }
+        }
+      }
+    },
+    "显示加油包余额、本月消费及进度条" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show booster pack balance, monthly spending, and progress bar"
+          }
+        }
+      }
+    },
+    "Kimi Web 卡片" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kimi Web Card"
+          }
+        }
+      }
+    },
+    "显示 Kimi Web 运行状态及启停按钮" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Kimi Web status and start/stop buttons"
+          }
+        }
+      }
+    },
+    "Kimi Code 版本号" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kimi Code Version"
+          }
+        }
+      }
+    },
+    "显示 KimiCode CLI 版本号及更新状态" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show KimiCode CLI version and update status"
+          }
+        }
+      }
+    },
+    "勾选要在菜单栏面板中显示的内容，取消勾选可隐藏对应卡片。设置即时生效。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the items you want to show in the menu bar panel. Uncheck to hide the corresponding card. Changes take effect immediately."
           }
         }
       }

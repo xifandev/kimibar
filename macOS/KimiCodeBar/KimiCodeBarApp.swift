@@ -21,14 +21,6 @@ enum AppTheme: String, CaseIterable, Identifiable {
         }
     }
 
-    var subtitle: String {
-        switch self {
-        case .system: return LanguageManager.tr("自动切换明暗")
-        case .dark: return LanguageManager.tr("深色外观")
-        case .light: return LanguageManager.tr("浅色外观")
-        }
-    }
-
     var iconName: String {
         switch self {
         case .system: return "circle.lefthalf.filled"
@@ -136,14 +128,14 @@ private func dynamicColor(light: NSColor, dark: NSColor) -> Color {
 extension ShapeStyle where Self == Color {
     static var kimiPanelBackground: Color {
         dynamicColor(
-            light: NSColor(red: 0.95, green: 0.95, blue: 0.97, alpha: 0.78),
+            light: NSColor(red: 0.91, green: 0.91, blue: 0.93, alpha: 1.0),
             dark: NSColor(red: 0.06, green: 0.08, blue: 0.13, alpha: 1.0)
         )
     }
 
     static var kimiCardBackground: Color {
         dynamicColor(
-            light: NSColor(white: 0.99, alpha: 0.88),
+            light: NSColor(white: 0.99, alpha: 1.0),
             dark: NSColor(red: 0.11, green: 0.14, blue: 0.21, alpha: 1.0)
         )
     }
@@ -765,10 +757,12 @@ struct KimiMenu: View {
                     )
                 }
 
-                BoosterWalletCard(
-                    wallet: model.quota?.boosterWallet,
-                    isLoading: model.isLoading
-                )
+                if model.showBoosterWalletCard {
+                    BoosterWalletCard(
+                        wallet: model.quota?.boosterWallet,
+                        isLoading: model.isLoading
+                    )
+                }
 
                 if model.kimiServerNeedsRestart && !isKimiServerRestartHintDismissed && kimiServerOperation == .none {
                     KimiServerRestartHint(
@@ -788,35 +782,37 @@ struct KimiMenu: View {
                     )
                 }
 
-                KimiServerCard(
-                    state: model.kimiServerState,
-                    operation: kimiServerOperation,
-                    onOpenWeb: {
-                        dismissMenuBarPanel()
-                        model.openKimiWeb()
-                    },
-                    onStart: {
-                        kimiServerOperation = .starting
-                        Task {
-                            await model.startKimiServer()
-                            await MainActor.run { kimiServerOperation = .none }
+                if model.showKimiServerCard {
+                    KimiServerCard(
+                        state: model.kimiServerState,
+                        operation: kimiServerOperation,
+                        onOpenWeb: {
+                            dismissMenuBarPanel()
+                            model.openKimiWeb()
+                        },
+                        onStart: {
+                            kimiServerOperation = .starting
+                            Task {
+                                await model.startKimiServer()
+                                await MainActor.run { kimiServerOperation = .none }
+                            }
+                        },
+                        onStop: {
+                            kimiServerOperation = .stopping
+                            Task {
+                                await model.stopKimiServer()
+                                await MainActor.run { kimiServerOperation = .none }
+                            }
+                        },
+                        onRestart: {
+                            kimiServerOperation = .restarting
+                            Task {
+                                await model.restartKimiServer()
+                                await MainActor.run { kimiServerOperation = .none }
+                            }
                         }
-                    },
-                    onStop: {
-                        kimiServerOperation = .stopping
-                        Task {
-                            await model.stopKimiServer()
-                            await MainActor.run { kimiServerOperation = .none }
-                        }
-                    },
-                    onRestart: {
-                        kimiServerOperation = .restarting
-                        Task {
-                            await model.restartKimiServer()
-                            await MainActor.run { kimiServerOperation = .none }
-                        }
-                    }
-                )
+                    )
+                }
             }
 
             // 操作按钮卡片
@@ -852,64 +848,66 @@ struct KimiMenu: View {
             }
 
             // KimiCode CLI 版本行：点击跳转官方更新日志
-            HStack(alignment: .center, spacing: 10) {
-                Text("KimiCode CLI")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.kimiTextTertiary)
+            if model.showKimiVersionRow {
+                HStack(alignment: .center, spacing: 10) {
+                    Text("KimiCode CLI")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.kimiTextTertiary)
 
-                Spacer()
+                    Spacer()
 
-                HStack(spacing: 6) {
-                    Text(formatKimiVersion(model.kimiVersion))
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.kimiTextSecondary)
+                    HStack(spacing: 6) {
+                        Text(formatKimiVersion(model.kimiVersion))
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.kimiTextSecondary)
 
-                    if model.updateErrorMessage != nil && !model.updateErrorMessage!.isEmpty {
-                        LText("检查更新失败")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(.red)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Color.red.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                    } else if model.pendingUpdateVersion != nil || model.hasCachedKimiUpdate {
-                        LText("发现新版本")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(.orange)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Color.orange.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                    } else {
-                        LText("当前最新")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(.kimiTextTertiary)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Color.kimiTextPrimary.opacity(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        if model.updateErrorMessage != nil && !model.updateErrorMessage!.isEmpty {
+                            LText("检查更新失败")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.red)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Color.red.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                        } else if model.pendingUpdateVersion != nil || model.hasCachedKimiUpdate {
+                            LText("发现新版本")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.orange)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Color.orange.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                        } else {
+                            LText("当前最新")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.kimiTextTertiary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Color.kimiTextPrimary.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                        }
                     }
                 }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.kimiCardBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.kimiTextPrimary.opacity(isHoveredUpdateLog ? 0.06 : 0))
-                    )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .contentShape(Rectangle())
-            .onHover { isHoveredUpdateLog = $0 }
-            .cursor(.pointingHand)
-            .onTapGesture {
-                if model.pendingUpdateVersion != nil || model.hasCachedKimiUpdate {
-                    showUpdateAlert = true
-                } else if let url = URL(string: "https://moonshotai.github.io/kimi-code/zh/release-notes/changelog.html") {
-                    NSWorkspace.shared.open(url)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.kimiCardBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.kimiTextPrimary.opacity(isHoveredUpdateLog ? 0.06 : 0))
+                        )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .contentShape(Rectangle())
+                .onHover { isHoveredUpdateLog = $0 }
+                .cursor(.pointingHand)
+                .onTapGesture {
+                    if model.pendingUpdateVersion != nil || model.hasCachedKimiUpdate {
+                        showUpdateAlert = true
+                    } else if let url = URL(string: "https://moonshotai.github.io/kimi-code/zh/release-notes/changelog.html") {
+                        NSWorkspace.shared.open(url)
+                    }
                 }
             }
 
@@ -2394,20 +2392,20 @@ final class SettingsWindowManager {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 860, height: 560),
+            contentRect: NSRect(x: 0, y: 0, width: 735, height: 560),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = LanguageManager.tr("KimiCode Bar 设置")
-        window.minSize = NSSize(width: 800, height: 520)
+        window.minSize = NSSize(width: 600, height: 520)
         window.collectionBehavior = [.managed, .moveToActiveSpace]
         window.titlebarAppearsTransparent = true
         window.backgroundColor = NSColor(name: nil, dynamicProvider: { appearance in
             let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             return isDark
                 ? NSColor(red: 0.06, green: 0.08, blue: 0.13, alpha: 1.0)
-                : NSColor(red: 0.95, green: 0.95, blue: 0.97, alpha: 0.78)
+                : NSColor(red: 0.91, green: 0.91, blue: 0.93, alpha: 1.0)
         })
         window.center()
         window.contentView = NSHostingView(rootView: SettingsRootView())
@@ -2583,6 +2581,7 @@ private func parseNestedFrontMatterValue(_ frontMatter: String, outerKey: String
 
 enum SettingsPane: String, CaseIterable, Identifiable {
     case basic
+    case panelCustom
     case archive
     case skills
     case about
@@ -2592,6 +2591,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .basic: return LanguageManager.tr("基本设置")
+        case .panelCustom: return LanguageManager.tr("面板自定义")
         case .archive: return LanguageManager.tr("自动归档")
         case .skills: return LanguageManager.tr("技能管理")
         case .about: return LanguageManager.tr("关于")
@@ -2601,6 +2601,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .basic: return "gear"
+        case .panelCustom: return "rectangle.3.group"
         case .archive: return "archivebox"
         case .skills: return "puzzlepiece.extension"
         case .about: return "info.circle"
@@ -2636,6 +2637,8 @@ struct SettingsRootView: View {
             switch selectedPane {
             case .basic:
                 BasicSettingsView()
+            case .panelCustom:
+                PanelCustomSettingsView()
             case .archive:
                 ArchiveSettingsView()
             case .skills:
@@ -2790,12 +2793,17 @@ enum APISettingField: Hashable {
 /// 用于登录方式、外观主题等互斥选项的选择。
 struct SettingsOptionCard: View {
     let title: String
-    let subtitle: String
+    let subtitle: String?
     let iconName: String
     let isSelected: Bool
     let action: () -> Void
 
     @State private var isHovered = false
+
+    private var hasSubtitle: Bool {
+        if let subtitle = subtitle, !subtitle.isEmpty { return true }
+        return false
+    }
 
     var body: some View {
         Button(action: action) {
@@ -2805,18 +2813,20 @@ struct SettingsOptionCard: View {
                     .foregroundStyle(isSelected ? .kimiBlue : .kimiTextSecondary)
                     .frame(width: 24, alignment: .center)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: hasSubtitle ? 2 : 0) {
                     Text(title)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.kimiTextPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
 
-                    Text(subtitle)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.kimiTextSecondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    if let subtitle = subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.kimiTextSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
                 .layoutPriority(0.5)
 
@@ -3187,7 +3197,7 @@ struct BasicSettingsView: View {
                         ForEach(AppTheme.allCases) { theme in
                             SettingsOptionCard(
                                 title: theme.displayName,
-                                subtitle: theme.subtitle,
+                                subtitle: nil,
                                 iconName: theme.iconName,
                                 isSelected: themeManager.theme == theme
                             ) {
@@ -3216,10 +3226,7 @@ struct BasicSettingsView: View {
 
                 // 启动
                 SettingsCard {
-                    SettingsCardRow(
-                        title: languageManager.tr("开机自动启动"),
-                        subtitle: languageManager.tr("登录 macOS 后自动启动 KimiCodeBar")
-                    ) {
+                    SettingsCardRow(title: languageManager.tr("开机自动启动")) {
                         Toggle("", isOn: launchAtLoginBinding)
                             .labelsHidden()
                             .toggleStyle(.switch)
@@ -3227,8 +3234,7 @@ struct BasicSettingsView: View {
                     }
                 }
 
-                // 自动刷新
-                SettingsCard(title: languageManager.tr("自动刷新")) {
+                SettingsCard {
                     VStack(alignment: .leading, spacing: 0) {
                         SettingsCardRow(title: languageManager.tr("额度刷新间隔")) {
                             HStack(spacing: 6) {
@@ -3336,8 +3342,8 @@ struct BasicSettingsView: View {
     }
 
     private func commitIntervals() {
-        let quota = Int(quotaIntervalText) ?? 5
-        let update = Int(updateIntervalText) ?? 30
+        let quota = Int(quotaIntervalText) ?? 3
+        let update = Int(updateIntervalText) ?? 10
         model.quotaRefreshInterval = Double(max(1, quota))
         model.updateCheckInterval = Double(max(10, update))
         quotaIntervalText = intervalText(from: model.quotaRefreshInterval)
@@ -3363,6 +3369,68 @@ struct BasicSettingsView: View {
         let prefix = String(key.prefix(7))
         let suffix = String(key.suffix(5))
         return "\(prefix)...\(suffix)"
+    }
+}
+
+// MARK: - 面板自定义
+
+struct PanelCustomSettingsView: View {
+    @StateObject private var model = KimiCodeBarModel.shared
+    @StateObject private var languageManager = LanguageManager.shared
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                LText("面板自定义")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.kimiTextPrimary)
+
+                SettingsCard(
+                    footerText: languageManager.tr("勾选要在菜单栏面板中显示的内容，取消勾选可隐藏对应卡片。设置即时生效。")
+                ) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        SettingsCardRow(
+                            title: languageManager.tr("加油包余额卡片"),
+                            subtitle: languageManager.tr("显示加油包余额、本月消费及进度条")
+                        ) {
+                            Toggle("", isOn: $model.showBoosterWalletCard)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .cursor(.pointingHand)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            title: languageManager.tr("Kimi Web 卡片"),
+                            subtitle: languageManager.tr("显示 Kimi Web 运行状态及启停按钮")
+                        ) {
+                            Toggle("", isOn: $model.showKimiServerCard)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .cursor(.pointingHand)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            title: languageManager.tr("Kimi Code 版本号"),
+                            subtitle: languageManager.tr("显示 KimiCode CLI 版本号及更新状态")
+                        ) {
+                            Toggle("", isOn: $model.showKimiVersionRow)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .cursor(.pointingHand)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 44)
+            .padding(.bottom, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.kimiPanelBackground)
     }
 }
 
@@ -3457,122 +3525,119 @@ struct SkillsSettingsView: View {
     @State private var isHoveredFinder = false
 
     var body: some View {
-        HStack(spacing: 0) {
-            // 左侧技能列表
-            VStack(alignment: .leading, spacing: 0) {
+        ZStack {
+            Color.kimiPanelBackground
+
+            if isLoading {
                 HStack(spacing: 8) {
-                    LText("技能管理")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.kimiTextPrimary)
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.8)
+                    LText("正在加载技能…")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.kimiTextSecondary)
+                }
+            } else if skills.isEmpty {
+                VStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.kimiTextPrimary.opacity(0.06))
+                            .frame(width: 56, height: 56)
 
-                    if !isLoading && !skills.isEmpty {
-                        Text("\(skills.count)")
-                            .font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "puzzlepiece.extension")
+                            .font(.system(size: 24, weight: .medium))
                             .foregroundStyle(.kimiTextTertiary)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2)
-                            .background(Color.kimiTextPrimary.opacity(0.08))
-                            .clipShape(Capsule())
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 36)
-                .padding(.bottom, 12)
 
-                if isLoading {
-                    Spacer()
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                            .scaleEffect(0.8)
-                        LText("正在加载技能…")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.kimiTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Spacer()
-                } else if skills.isEmpty {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.kimiTextPrimary.opacity(0.06))
-                                .frame(width: 56, height: 56)
-
-                            Image(systemName: "puzzlepiece.extension")
-                                .font(.system(size: 24, weight: .medium))
-                                .foregroundStyle(.kimiTextTertiary)
-                        }
-
-                        VStack(spacing: 4) {
-                            LText("暂无已安装技能")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.kimiTextSecondary)
-                            LText("技能包通常位于 ~/.kimi-code/skills/")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.kimiTextTertiary)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    Spacer()
-                } else {
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            LazyVStack(spacing: 8) {
-                                ForEach(skills) { skill in
-                                    SkillListItem(
-                                        skill: skill,
-                                        isSelected: selectedSkill?.id == skill.id
-                                    ) {
-                                        selectSkill(skill)
-                                        withAnimation {
-                                            proxy.scrollTo(skill.id, anchor: .center)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 4)
-                        }
-                    }
-                }
-            }
-            .frame(width: 250)
-            .background(Color.kimiPanelBackground)
-
-            // 右侧预览区
-            ZStack {
-                Color.kimiPanelBackground
-
-                if isLoadingPreview {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                            .scaleEffect(0.8)
-                        LText("正在加载内容…")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.kimiTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let skill = displayedSkill {
-                    skillPreview(skill)
-                } else {
-                    VStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.kimiTextPrimary.opacity(0.06))
-                                .frame(width: 56, height: 56)
-
-                            Image(systemName: "doc.text.magnifyingglass")
-                                .font(.system(size: 24, weight: .medium))
-                                .foregroundStyle(.kimiTextTertiary)
-                        }
-
-                        LText("选择左侧技能以预览内容")
+                    VStack(spacing: 4) {
+                        LText("暂无已安装技能")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(.kimiTextSecondary)
+                        LText("技能包通常位于 ~/.kimi-code/skills/")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.kimiTextTertiary)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // 顶部横向技能列表
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(spacing: 8) {
+                                LText("技能管理")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundStyle(.kimiTextPrimary)
+
+                                Text("\(skills.count)")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.kimiTextTertiary)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 2)
+                                    .background(Color.kimiTextPrimary.opacity(0.08))
+                                    .clipShape(Capsule())
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            .padding(.bottom, 12)
+
+                            ScrollViewReader { proxy in
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    LazyHStack(spacing: 10) {
+                                        ForEach(skills) { skill in
+                                            SkillHorizontalItem(
+                                                skill: skill,
+                                                isSelected: selectedSkill?.id == skill.id
+                                            ) {
+                                                selectSkill(skill)
+                                                withAnimation {
+                                                    proxy.scrollTo(skill.id, anchor: .center)
+                                                }
+                                            }
+                                            .id(skill.id)
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 4)
+                                }
+                            }
+                        }
+                        .background(Color.kimiPanelBackground)
+
+                        Divider()
+                            .background(Color.kimiTextPrimary.opacity(0.08))
+
+                        // 预览区
+                        if isLoadingPreview {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.8)
+                                LText("正在加载内容…")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.kimiTextSecondary)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 200)
+                        } else if let skill = displayedSkill {
+                            skillPreview(skill)
+                        } else {
+                            VStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color.kimiTextPrimary.opacity(0.06))
+                                        .frame(width: 56, height: 56)
+
+                                    Image(systemName: "doc.text.magnifyingglass")
+                                        .font(.system(size: 24, weight: .medium))
+                                        .foregroundStyle(.kimiTextTertiary)
+                                }
+
+                                LText("选择上方技能以预览内容")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.kimiTextSecondary)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 200)
+                        }
+                    }
                 }
             }
         }
@@ -3656,7 +3721,7 @@ struct SkillsSettingsView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
 
             // 正文卡片
-            ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(skill.content)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(.kimiTextSecondary)
@@ -3665,6 +3730,7 @@ struct SkillsSettingsView: View {
                     .padding(16)
                     .textSelection(.enabled)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.kimiCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
@@ -3709,7 +3775,7 @@ struct SkillsSettingsView: View {
     }
 }
 
-private struct SkillListItem: View {
+private struct SkillHorizontalItem: View {
     let skill: SkillInfo
     let isSelected: Bool
     let action: () -> Void
@@ -3717,65 +3783,58 @@ private struct SkillListItem: View {
     @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.white.opacity(0.22) : Color.kimiBlue.opacity(0.12))
-                    .frame(width: 32, height: 32)
-
-                Image(systemName: "puzzlepiece.extension")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(isSelected ? .white : .kimiBlue)
-            }
-            .frame(width: 32, height: 32)
-
-            VStack(alignment: .leading, spacing: 4) {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
-                    Text(skill.name)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(isSelected ? .white : .kimiTextPrimary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .layoutPriority(0.5)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isSelected ? Color.white.opacity(0.22) : Color.kimiBlue.opacity(0.12))
+                            .frame(width: 32, height: 32)
+
+                        Image(systemName: "puzzlepiece.extension")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(isSelected ? .white : .kimiBlue)
+                    }
+
+                    Spacer()
 
                     if !skill.version.isEmpty {
-                        Text(skill.version)
+                        Text("v\(skill.version)")
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(isSelected ? .white.opacity(0.85) : .kimiTextTertiary)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
-                            .background(
-                                (isSelected ? Color.white.opacity(0.25) : Color.kimiTextPrimary.opacity(0.08))
-                            )
+                            .background(isSelected ? Color.white.opacity(0.25) : Color.kimiTextPrimary.opacity(0.08))
                             .clipShape(RoundedRectangle(cornerRadius: 3))
-                            .fixedSize()
                     }
                 }
+
+                Text(skill.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(isSelected ? .white : .kimiTextPrimary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 if !skill.description.isEmpty {
                     Text(skill.description)
                         .font(.system(size: 11))
                         .foregroundStyle(isSelected ? .white.opacity(0.85) : .kimiTextSecondary)
                         .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(isSelected ? .white.opacity(0.85) : .kimiTextTertiary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(width: 150)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(backgroundColor)
+            )
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(backgroundColor)
-        )
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
         .cursor(.pointingHand)
         .onHover { isHovered = $0 }
-        .onTapGesture(perform: action)
     }
 
     private var backgroundColor: Color {
@@ -4106,13 +4165,18 @@ final class KimiCodeBarModel: ObservableObject {
     @AppStorage("loginMethod") var loginMethod: LoginMethod = .oauth {
         didSet { refresh(showsLoading: false) }
     }
-    @AppStorage("quotaRefreshInterval") var quotaRefreshInterval: Double = 5
-    @AppStorage("updateCheckInterval") var updateCheckInterval: Double = 30
+    @AppStorage("quotaRefreshInterval") var quotaRefreshInterval: Double = 3
+    @AppStorage("updateCheckInterval") var updateCheckInterval: Double = 10
     @AppStorage("menuBarDisplayScheme") var menuBarDisplayScheme: MenuBarDisplayScheme = .compact
     @AppStorage("ignoredAppUpdateVersion") var ignoredAppUpdateVersion: String = ""
     @AppStorage("cachedKimiLatestVersion") var cachedKimiLatestVersion: String = ""
     @AppStorage("cachedKimiReleaseNotes") var cachedKimiReleaseNotes: String = ""
     @AppStorage("snoozedKimiUpdateUntil") var snoozedKimiUpdateUntil: Double = 0
+
+    // MARK: - 面板自定义（用户控制各卡片是否显示）
+    @AppStorage("showBoosterWalletCard") var showBoosterWalletCard: Bool = true
+    @AppStorage("showKimiServerCard") var showKimiServerCard: Bool = true
+    @AppStorage("showKimiVersionRow") var showKimiVersionRow: Bool = true
 
     @Published var text = "-- · --"
     @Published var quota: KimiQuota?
