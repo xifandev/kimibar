@@ -25,7 +25,7 @@ jobs:
 
       - name: Download Sparkle tools
         run: |
-          SPARKLE_VERSION=2.6.4
+          SPARKLE_VERSION=2.9.4
           curl -L -o sparkle.tar.xz "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
           tar -xf sparkle.tar.xz
           mkdir -p sparkle-tools
@@ -56,6 +56,7 @@ jobs:
             CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="Z2L7QJW4R7" \
             CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
             BUILD_DIR="$(pwd)/macOS/build"
 
       - name: Package
@@ -86,20 +87,26 @@ jobs:
         run: |
           APP="dist/KimiCodeBar.app"
 
-          # 1. 重新签名 Sparkle 框架内部所有辅助二进制（从里到外）
-          codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
-          codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
-          codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate"
-          codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app"
-          codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle"
+          # 1. 重新签名 Sparkle 框架内部所有辅助二进制（保留原有 entitlements）
+          codesign --force --timestamp --options runtime --preserve-metadata=entitlements --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
+          codesign --force --timestamp --options runtime --preserve-metadata=entitlements --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
+          codesign --force --timestamp --options runtime --preserve-metadata=entitlements --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate"
+          codesign --force --timestamp --options runtime --preserve-metadata=entitlements --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app"
 
-          # 2. 重新签名主程序，显式指定发布版 entitlements（去除调试用的 get-task-allow）
+          # 2. 重新签名 Sparkle 框架本身
+          codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
+
+          # 3. 重新签名主程序，显式指定发布版 entitlements
           codesign --force --timestamp --options runtime --entitlements macOS/KimiCodeBar/KimiCodeBar.entitlements --sign "$SIGN_ID" "$APP/Contents/MacOS/KimiCodeBar"
 
-          # 3. 最终 deep 签名整个 app bundle
-          codesign --force --deep --timestamp --options runtime --sign "$SIGN_ID" "$APP"
+          # 4. 最终签名整个 app bundle（不使用 --deep，已手动完成嵌套签名）
+          codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$APP"
 
-          # 4. 签名 dmg
+          # 5. 本地校验
+          codesign -vvv --deep --strict "$APP"
+          spctl -a -t exec -vv "$APP" || true
+
+          # 6. 签名 dmg
           codesign --force --timestamp --options runtime --sign "$SIGN_ID" dist/KimiCodeBar-*-macOS.dmg
 
       - name: Notarize
@@ -109,7 +116,31 @@ jobs:
           NOTARIZATION_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
         run: |
           DMG_PATH=$(ls dist/KimiCodeBar-*-macOS.dmg | head -1)
-          xcrun notarytool submit "$DMG_PATH" --apple-id "$NOTARIZATION_APPLE_ID" --team-id "$NOTARIZATION_TEAM_ID" --password "$NOTARIZATION_PASSWORD" --wait
+
+          set +e
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$NOTARIZATION_APPLE_ID" \
+            --team-id "$NOTARIZATION_TEAM_ID" \
+            --password "$NOTARIZATION_PASSWORD" \
+            --wait 2>&1 | tee notary_output.txt
+          EXIT_CODE=$?
+          set -e
+
+          SUBMISSION_ID=$(grep -E '^\s*id:' notary_output.txt | head -1 | awk '{print $2}')
+
+          if grep -q "status: Invalid" notary_output.txt; then
+            echo "Notarization failed, fetching detailed log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$NOTARIZATION_APPLE_ID" \
+              --team-id "$NOTARIZATION_TEAM_ID" \
+              --password "$NOTARIZATION_PASSWORD"
+            exit 1
+          fi
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            exit $EXIT_CODE
+          fi
+
           xcrun stapler staple "$DMG_PATH"
 
       - name: Generate Appcast
