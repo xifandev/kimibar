@@ -14,9 +14,8 @@ concurrency:
 jobs:
   build:
     runs-on: macos-latest
-    # 兜底超时：macOS 构建 + 公证最长 150 分钟
-    # 开源项目 Actions 免费，给足余量（submit 轮询 60min + wait 续等 60min = 120min，加 build/release 共 150min）
-    timeout-minutes: 150
+    # 兜底超时：macOS 构建 + 公证最长 75 分钟（公证 --wait 最多 60min + build/release 约 10min）
+    timeout-minutes: 75
     permissions:
       contents: write    # 创建 GitHub Release
       pages: write       # 部署 appcast.xml 到 GitHub Pages
@@ -139,8 +138,7 @@ jobs:
           codesign --force --timestamp --options runtime --sign "$SIGN_ID" dist/KimiCodeBar-*-macOS.dmg
 
       # ============ 公证阶段 ============
-      # 提交 DMG 到 Apple Notarization 服务并等待结果
-      # submit 轮询 60 分钟，超时则用 notarytool wait 续等同一提交（最多再 60 分钟）
+      # 提交 DMG 到 Apple Notarization 服务并等待结果（notarytool --wait 内部循环轮询，最多 60 分钟）
       - name: Notarize
         env:
           NOTARIZATION_APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
@@ -154,31 +152,18 @@ jobs:
           set +e
           set -o pipefail
 
-          # 第一次提交并轮询等待（最多 60 分钟）
-          # 注意：--timeout 超时后仅 notarytool 客户端退出，Apple 服务端仍继续处理该 submission
+          # 提交并持续等待公证完成（notarytool 内部循环轮询，最多 60 分钟）
           xcrun notarytool submit "$DMG_PATH" \
             --apple-id "$NOTARIZATION_APPLE_ID" \
             --team-id "$NOTARIZATION_TEAM_ID" \
             --password "$NOTARIZATION_PASSWORD" \
             --wait --timeout 3600 2>&1 | tee notary_output.txt
           EXIT_CODE=${PIPESTATUS[0]}
-
-          SUBMISSION_ID=$(grep -E '^\s*id:' notary_output.txt | head -1 | awk '{print $2}')
-
-          # 轮询超时（exit 124）但 submission 已提交：用 notarytool wait 续等同一提交
-          # 不重新上传——Apple 服务端仍在处理该 id，复用即可突破单次 --timeout 上限
-          if [ $EXIT_CODE -eq 124 ] && [ -n "$SUBMISSION_ID" ]; then
-            echo "::warning::Notarization poll timed out after 60 min, resuming wait on submission $SUBMISSION_ID (Apple still processing)..."
-            xcrun notarytool wait "$SUBMISSION_ID" \
-              --apple-id "$NOTARIZATION_APPLE_ID" \
-              --team-id "$NOTARIZATION_TEAM_ID" \
-              --password "$NOTARIZATION_PASSWORD" \
-              --timeout 3600 2>&1 | tee -a notary_output.txt
-            EXIT_CODE=${PIPESTATUS[0]}
-          fi
-
           set +o pipefail
           set -e
+
+          # submission id 用于 Invalid 时拉取详细日志
+          SUBMISSION_ID=$(grep -E '^\s*id:' notary_output.txt | head -1 | awk '{print $2}') || true
 
           # 公证结果为 Invalid：拉取详细日志后失败退出
           if grep -q "status: Invalid" notary_output.txt; then
