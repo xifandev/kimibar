@@ -2435,12 +2435,19 @@ final class SettingsWindowManager {
     private init() {}
 
     func show() {
+        // LSUIElement 应用（无 Dock 图标）在关闭菜单栏面板后会立即失焦，
+        // 必须先激活 App 再关面板，否则后续创建的设置窗口无法正确显示——
+        // 窗口会成为 key 但不可见，重新打开菜单栏面板时所有鼠标事件
+        // 都被这个不可见的 .floating 窗口吞掉，面板完全无法操作。
+        NSApp.activate(ignoringOtherApps: true)
+
         // 菜单栏面板是高层级的 NSPanel 弹层，会压住设置窗口，打开设置前先关掉它
         dismissMenuBarPanel()
 
         if let window = window {
+            // 复用已有窗口：重新居中，防止多显示器/分辨率变化后窗口跑到屏幕外
+            window.center()
             window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
             return
         }
 
@@ -2467,7 +2474,6 @@ final class SettingsWindowManager {
         self.window = window
 
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     /// 语言切换后刷新设置窗口标题
