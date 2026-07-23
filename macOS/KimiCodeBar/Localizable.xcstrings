@@ -2059,6 +2059,39 @@
           }
         }
       }
+    },
+    "KimiCodeBar 版本行" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KimiCodeBar Version Row"
+          }
+        }
+      }
+    },
+    "显示 KimiCodeBar 版本号及更新状态，隐藏后检测到新版本时右上角显示更新入口" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show KimiCodeBar version and update status. When hidden, an update badge appears in the top-right corner if a new version is detected"
+          }
+        }
+      }
+    },
+    "发现更新" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update Available"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -710,6 +710,7 @@ struct AppUpdateRow: View {
 struct KimiMenu: View {
     @StateObject private var model = KimiCodeBarModel.shared
     @StateObject private var languageManager = LanguageManager.shared
+    @StateObject private var sparkleUpdater = SparkleUpdater.shared
     @Environment(\.colorScheme) private var colorScheme
     @State private var isHoveredUpdateLog = false
     @State private var isMenuVisible = false
@@ -732,7 +733,12 @@ struct KimiMenu: View {
 
                 Spacer()
 
-                CommunityButton(url: githubURL)
+                // 隐藏了 KimiCodeBar 版本行且检测到新版本时，社区版按钮替换为「发现更新」
+                if !model.showAppUpdateRow && (sparkleUpdater.isUpdateAvailable || model.pendingAppUpdateVersion != nil) {
+                    AppUpdateBadgeButton()
+                } else {
+                    CommunityButton(url: githubURL)
+                }
             }
 
             // 用量卡片
@@ -912,7 +918,9 @@ struct KimiMenu: View {
             }
 
             // KimiCodeBar 版本行：点击跳转 GitHub Release
-            AppUpdateRow()
+            if model.showAppUpdateRow {
+                AppUpdateRow()
+            }
         }
         .padding(16)
         .frame(width: 340)
@@ -1669,6 +1677,51 @@ struct LinkRow: View {
             .padding(.vertical, 4)
             .background(isHovered ? Color.kimiBlue.opacity(0.12) : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .cursor(.pointingHand)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+// MARK: - 发现更新按钮（隐藏版本行时的替代入口）
+
+struct AppUpdateBadgeButton: View {
+    @StateObject private var sparkleUpdater = SparkleUpdater.shared
+    @StateObject private var model = KimiCodeBarModel.shared
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: {
+            if sparkleUpdater.isUpdateReadyToRestart {
+                sparkleUpdater.restartToInstallUpdate()
+            } else if sparkleUpdater.isUpdateAvailable || model.pendingAppUpdateVersion != nil {
+                sparkleUpdater.showStandardUpdateUI()
+            } else {
+                sparkleUpdater.openGitHubReleases()
+            }
+        }) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.orange)
+
+                LText("发现更新")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .foregroundStyle(isHovered ? .kimiTextPrimary : .kimiTextSecondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? Color.orange.opacity(0.15) : Color.orange.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.orange.opacity(isHovered ? 0.50 : 0.30), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .cursor(.pointingHand)
@@ -3423,6 +3476,18 @@ struct PanelCustomSettingsView: View {
                                 .toggleStyle(.switch)
                                 .cursor(.pointingHand)
                         }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            title: languageManager.tr("KimiCodeBar 版本行"),
+                            subtitle: languageManager.tr("显示 KimiCodeBar 版本号及更新状态，隐藏后检测到新版本时右上角显示更新入口")
+                        ) {
+                            Toggle("", isOn: $model.showAppUpdateRow)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .cursor(.pointingHand)
+                        }
                     }
                 }
             }
@@ -4178,6 +4243,7 @@ final class KimiCodeBarModel: ObservableObject {
     @AppStorage("showBoosterWalletCard") var showBoosterWalletCard: Bool = true
     @AppStorage("showKimiServerCard") var showKimiServerCard: Bool = true
     @AppStorage("showKimiVersionRow") var showKimiVersionRow: Bool = true
+    @AppStorage("showAppUpdateRow") var showAppUpdateRow: Bool = true
 
     @Published var text = "-- · --"
     @Published var quota: KimiQuota?
