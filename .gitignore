@@ -44,3 +44,6 @@ macOS/SparkleTest/appcast.xml
 # Windows
 Thumbs.db
 desktop.ini
+
+# WorkBuddy workspace data (project memory & notes, not source code)
+.workbuddy/
