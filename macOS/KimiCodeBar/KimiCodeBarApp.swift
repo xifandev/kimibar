@@ -4592,75 +4592,72 @@ final class KimiCodeBarModel: ObservableObject {
     }
 
     func stopKimiServer() async {
-        // Kimi Code 0.28 起 `kimi web` 是前台进程，且 `kimi web kill` 已移除。
-        // 通过结束 `kimi web` 进程来停止服务，再关闭由我们打开的 Terminal 标签页/窗口。
-        await terminateKimiWebProcesses()
+        // 与启动同一机制：写 .command 脚本由 Terminal 执行 pkill。
+        // App 内直接 kill 进程在部分环境下不可靠（与启动时 AppleScript 权限问题同理），
+        // Terminal 的用户会话环境执行 pkill 与启动路径一致。
+        dismissMenuBarPanel()
+
+        // 若服务本来就没在跑，跳过脚本执行，避免无谓弹出 Terminal 窗口
+        let currentState = await detectKimiServerState()
+        guard currentState.status == .running else {
+            await closeKimiWebTerminalWindows()
+            await KimiWebLaunchAgentManager.shared.uninstall()
+            await refreshKimiServerState()
+            return
+        }
+
+        guard let commandURL = writeKimiWebStopCommandFile() else { return }
+        NSWorkspace.shared.open(commandURL)
+
+        // 轮询等待 server 停止（最多 10 秒）
+        for _ in 0..<10 {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            let state = await detectKimiServerState()
+            if state.status != .running { break }
+        }
+
+        // 进程结束后 Terminal 不再提示“终止运行中的进程”，尝试关闭残留窗口（无自动化权限时静默失败，无害）
         await closeKimiWebTerminalWindows()
 
         // 清理可能残留的旧 LaunchAgent，避免 KeepAlive 反复拉起进程
         await KimiWebLaunchAgentManager.shared.uninstall()
 
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
         await refreshKimiServerState()
     }
 
-    /// 查找并结束所有 `kimi web` 进程。
-    private func terminateKimiWebProcesses() async {
-        guard let pids = Self.findKimiWebPIDs(), !pids.isEmpty else { return }
-
-        await Task.detached(priority: .utility) {
-            for pid in pids {
-                kill(pid, SIGTERM)
-            }
-
-            // 等待 2 秒让进程自行退出
-            try? await Task.sleep(nanoseconds: 2 * 1_000_000_000)
-
-            // 仍在跑的强制 SIGKILL
-            for pid in pids {
-                if kill(pid, 0) == 0 {
-                    kill(pid, SIGKILL)
-                }
-            }
-        }.value
-    }
-
-    private static nonisolated func findKimiWebPIDs() -> [Int32]? {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/bash")
-        task.arguments = ["-lc", "pgrep -f 'kimi web'"]
-
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
-
-        do {
-            try task.run()
-            task.waitUntilExit()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(data: data, encoding: .utf8) ?? ""
-            return output.components(separatedBy: .newlines)
-                .compactMap { line -> Int32? in
-                    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return trimmed.isEmpty ? nil : Int32(trimmed)
-                }
-        } catch {
+    /// 在 Application Support 目录写入停止脚本并返回其 URL。
+    private func writeKimiWebStopCommandFile() -> URL? {
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
         }
+        let dir = appSupport.appendingPathComponent("KimiCodeBar", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let commandURL = dir.appendingPathComponent("stop-kimi-web.command")
+        let script = "#!/bin/zsh\npkill -f 'kimi web'\n"
+        try? script.write(to: commandURL, atomically: true, encoding: .utf8)
+
+        var attributes = [FileAttributeKey: Any]()
+        attributes[.posixPermissions] = 0o755
+        try? FileManager.default.setAttributes(attributes, ofItemAtPath: commandURL.path)
+
+        return commandURL
     }
 
-    /// 关闭标题包含启动脚本名的 Terminal 标签页/窗口。
+    /// 关闭标题包含启动/停止脚本名的 Terminal 标签页/窗口。
     /// 进程结束后 Terminal 不再提示“终止运行中的进程”，可直接关闭。
     private func closeKimiWebTerminalWindows() async {
         await Task.detached(priority: .utility) {
             let script = """
             tell application "Terminal"
-                set targetName to "start-kimi-web.command"
+                set targetNames to {"start-kimi-web.command", "stop-kimi-web.command"}
                 repeat with w in windows
                     repeat with t in tabs of w
-                        if name of t contains targetName then
-                            close t
-                        end if
+                        repeat with targetName in targetNames
+                            if name of t contains targetName then
+                                close t
+                            end if
+                        end repeat
                     end repeat
                 end repeat
             end tell
