@@ -3441,13 +3441,17 @@ struct PanelCustomSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                LText("面板自定义")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.kimiTextPrimary)
+                VStack(alignment: .leading, spacing: 6) {
+                    LText("面板自定义")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.kimiTextPrimary)
 
-                SettingsCard(
-                    footerText: languageManager.tr("勾选要在菜单栏面板中显示的内容，取消勾选可隐藏对应卡片。设置即时生效。")
-                ) {
+                    LText("勾选要在菜单栏面板中显示的内容，取消勾选可隐藏对应卡片。设置即时生效。")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.kimiTextSecondary)
+                }
+
+                SettingsCard {
                     VStack(alignment: .leading, spacing: 0) {
                         SettingsCardRow(
                             title: languageManager.tr("加油包余额卡片")
@@ -4244,7 +4248,7 @@ final class KimiCodeBarModel: ObservableObject {
     // MARK: - 面板自定义（用户控制各卡片是否显示）
     @AppStorage("showBoosterWalletCard") var showBoosterWalletCard: Bool = true
     @AppStorage("showKimiServerCard") var showKimiServerCard: Bool = true
-    @AppStorage("showKimiVersionRow") var showKimiVersionRow: Bool = true
+    @AppStorage("showKimiVersionRow") var showKimiVersionRow: Bool = false
     @AppStorage("showAppUpdateRow") var showAppUpdateRow: Bool = true
 
     @Published var text = "-- · --"
