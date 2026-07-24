@@ -340,7 +340,7 @@ struct LocalUsageCard: View {
     private func barHeight(for day: LocalUsageDay) -> CGFloat {
         guard maxDayTokens > 0 else { return 1 }
         // 0 值天保留 1px 底线，视觉上不断流
-        max(1, CGFloat(day.totalTokens) / CGFloat(maxDayTokens) * chartHeight)
+        return max(1, CGFloat(day.totalTokens) / CGFloat(maxDayTokens) * chartHeight)
     }
 
     private func barColor(for day: LocalUsageDay) -> Color {
