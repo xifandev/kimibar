@@ -1505,14 +1505,6 @@ struct KimiServerCard: View {
                     .padding(.vertical, 2)
                     .background(statusColor.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                Spacer()
-
-                if !state.version.isEmpty && state.version != languageManager.tr("未检测到") && state.version != languageManager.tr("检测中…") {
-                    Text(formatKimiVersion(state.version))
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.kimiTextSecondary)
-                }
             }
 
             HStack(spacing: 8) {
