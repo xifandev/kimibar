@@ -770,6 +770,11 @@ struct KimiMenu: View {
                     )
                 }
 
+                // 本地用量卡片：扫描本地会话记录（wire.jsonl usage.record）得出 Token 消耗
+                if model.showLocalUsageCard {
+                    LocalUsageCard()
+                }
+
                 // Kimi Web 卡片及重启提示条临时屏蔽（2026-07）：Kimi 官方将 Kimi Web 改为
                 // 纯前端展示，且移除了 web kill 等管理命令，启停管理失去意义。
                 // KimiServerCard / KimiServerRestartHint / startKimiServer / stopKimiServer
@@ -910,6 +915,8 @@ struct KimiMenu: View {
                 }
                 // 面板打开时探测 App 新版本，只更新状态、不弹窗
                 SparkleUpdater.shared.checkForUpdateInformation()
+                // 面板打开时扫描一次本地会话用量（后台线程，3 分钟节流）
+                KimiLocalUsageService.shared.refreshIfNeeded()
                 // 基于缓存快速判断是否需要弹窗
                 model.checkCachedKimiUpdate()
                 if model.pendingUpdateVersion != nil {
@@ -3411,6 +3418,17 @@ struct PanelCustomSettingsView: View {
 
                         SettingsCardDivider()
 
+                        SettingsCardRow(
+                            title: languageManager.tr("本地用量卡片")
+                        ) {
+                            Toggle("", isOn: $model.showLocalUsageCard)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .cursor(.pointingHand)
+                        }
+
+                        SettingsCardDivider()
+
                         // 「Kimi Web 卡片」已弃用（2026-07）：官方砍掉 server 服务，
                         // 置灰禁用展示，保留用户历史开关状态但不可操作。
                         SettingsCardRow(
@@ -4198,6 +4216,7 @@ final class KimiCodeBarModel: ObservableObject {
 
     // MARK: - 面板自定义（用户控制各卡片是否显示）
     @AppStorage("showBoosterWalletCard") var showBoosterWalletCard: Bool = true
+    @AppStorage("showLocalUsageCard") var showLocalUsageCard: Bool = true
     @AppStorage("showKimiServerCard") var showKimiServerCard: Bool = true
     @AppStorage("showKimiVersionRow") var showKimiVersionRow: Bool = false
     @AppStorage("showAppUpdateRow") var showAppUpdateRow: Bool = false
